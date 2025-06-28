@@ -22,9 +22,9 @@ export default function Auth({ mode }: Props) {
         </header>
         <section className="flex flex-col items-center gap-[10px]">
           <AuthInput
-            placeholder="Enter login or email"
-            name="Login or email"
-            label="Login or Email"
+            placeholder="Enter login"
+            name="Login"
+            label="Login"
           />
           <AuthInput
             placeholder="Enter password"
