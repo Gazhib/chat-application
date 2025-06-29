@@ -1,6 +1,6 @@
 import { createBrowserRouter, RouterProvider } from "react-router";
 import "./App.css";
-import AuthPage from "./Pages/AuthPage";
+import AuthPage, { action as authAction } from "./Pages/AuthPage";
 import ChatsPage from "./Pages/ChatsPage";
 import AuthRoutes from "./util/AuthRoutes";
 import ProtectedRoutes from "./util/ProtectedRoutes";
@@ -14,6 +14,7 @@ function App() {
         {
           path: "/auth",
           element: <AuthPage />,
+          action: authAction,
         },
       ],
     },

@@ -21,7 +21,7 @@ export async function action({ request }: { request: Request }) {
   const fd = await request.formData();
   const url = new URL(request.url);
   const mode = url.searchParams.get("mode");
-  const fetchUrl = `http://localhost:4000/auth/${mode}`;
+  const fetchUrl = `http://localhost:4000/api/${mode}`;
 
   const login = fd.get("Login");
   const password = fd.get("Password");
@@ -40,7 +40,7 @@ export async function action({ request }: { request: Request }) {
     const responseData = await response.json();
 
     if (response.ok) {
-      return redirect("/chat");
+      return redirect("/chats");
     } else {
       return {
         message:

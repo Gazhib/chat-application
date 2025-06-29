@@ -1,0 +1,21 @@
+{
+  "dependencies": {
+    "bcryptjs": "^3.0.2",
+    "cookie-parser": "^1.4.7",
+    "cors": "^2.8.5",
+    "crypto": "^1.0.1",
+    "dotenv": "^17.0.0",
+    "express": "^5.1.0",
+    "jsonwebtoken": "^9.0.2",
+    "nodemon": "^3.1.10",
+    "ws": "^8.18.3"
+  },
+  "scripts": {
+    "dev": "nodemon app.js",
+    "devAuth": "nodemon auth.js",
+    "devSocket": "nodemon socket.js"
+  },
+  "optionalDependencies": {
+    "bufferutil": "^4.0.9"
+  }
+}
