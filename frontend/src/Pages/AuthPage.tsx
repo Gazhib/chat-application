@@ -24,6 +24,7 @@ export async function action({ request }: { request: Request }) {
   const fetchUrl = `http://localhost:4000/api/${mode}`;
 
   const login = fd.get("Login");
+  const email = fd.get("Email");
   const password = fd.get("Password");
   const confirmPassword = fd.get("Confirm password");
 
@@ -31,7 +32,7 @@ export async function action({ request }: { request: Request }) {
     const response = await fetch(fetchUrl, {
       method: "POST",
       credentials: "include",
-      body: JSON.stringify({ login, password, confirmPassword }),
+      body: JSON.stringify({ login, password, confirmPassword, email }),
       headers: {
         "Content-Type": "application/json",
       },
@@ -44,7 +45,7 @@ export async function action({ request }: { request: Request }) {
     } else {
       return {
         message:
-          responseData.message ||
+          responseData ||
           `${mode === "login" ? "Login" : "Registration"} failed`,
       };
     }

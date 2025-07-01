@@ -1,4 +1,4 @@
-import { Form, Link } from "react-router";
+import { Form, Link, useActionData, useNavigation } from "react-router";
 import AuthInput from "./Components/AuthInput";
 
 type Props = {
@@ -7,6 +7,10 @@ type Props = {
 
 export default function Auth({ mode }: Props) {
   const isLogin = mode === "login";
+  const errorMessage = useActionData();
+  const navigation = useNavigation();
+  const isSubmitting = navigation.state === "submitting";
+  console.log(errorMessage);
   return (
     <Form
       method="post"
@@ -21,22 +25,31 @@ export default function Auth({ mode }: Props) {
           </span>
         </header>
         <section className="flex flex-col items-center gap-[10px]">
-          <AuthInput
-            placeholder="Enter login"
-            name="Login"
-            label="Login"
-          />
+          <AuthInput placeholder="Enter login" name="Login" label="Login" />
+          {!isLogin && (
+            <AuthInput
+              placeholder="Enter email"
+              name="Email"
+              label="Email"
+              type="email"
+            />
+          )}
           <AuthInput
             placeholder="Enter password"
             name="Password"
             label="Password"
+            type="password"
           />
           {!isLogin && (
             <AuthInput
               placeholder="Enter confirm password"
               name="Confirm password"
               label="Confirm password"
+              type="password"
             />
+          )}
+          {errorMessage && (
+            <span className="text-red-600">{errorMessage.message}</span>
           )}
         </section>
         <footer className="flex flex-col w-full gap-[20px]">
@@ -53,7 +66,7 @@ export default function Auth({ mode }: Props) {
           </div>
           <section className="w-full justify-center items-center">
             <button className="rounded-[10px] h-[40px] cursor-pointer w-full bg-black hover:bg-black/70 text-white hover:text-gray-200">
-              {isLogin ? "Login" : "Register"}
+              {isLogin ? (isSubmitting ? "Logging in..." : "Login") : (isSubmitting ? "Registering..." : "Register")}
             </button>
           </section>
           <span className="flex flex-row gap-[5px]">

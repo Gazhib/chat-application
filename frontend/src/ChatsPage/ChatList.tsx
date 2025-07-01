@@ -29,7 +29,7 @@ export default function ChatList() {
           <Link
             to={`/chats/${contact.id}`}
             key={contact.id}
-            className="h-[60px] items-center gap-[10px] flex flex-row border-b-[1px] border-[#333333] text-white cursor-pointer"
+            className="h-[60px] items-center gap-[10px] flex flex-row border-b-[1px] border-[#333333] hover:bg-[#2E2F30] text-white cursor-pointer"
           >
             <img
               src={contact.photo}
