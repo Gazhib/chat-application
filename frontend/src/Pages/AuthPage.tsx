@@ -41,7 +41,9 @@ export async function action({ request }: { request: Request }) {
     const responseData = await response.json();
 
     if (response.ok) {
-      return redirect("/chats");
+      if (mode === "login") return redirect("/chats");
+
+      return redirect(`/verify?email=${encodeURIComponent(String(email))}`);
     } else {
       return {
         message:

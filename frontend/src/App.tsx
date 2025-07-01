@@ -5,36 +5,58 @@ import ChatsPage from "./Pages/ChatsPage";
 import AuthRoutes from "./util/AuthRoutes";
 import ProtectedRoutes from "./util/ProtectedRoutes";
 import Chat from "./ChatsPage/Chat";
+import VerificationPage, {
+  action as verifyAction,
+} from "./Pages/VerificationPage";
+import RootLayout from "./RootLayout";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 
 function App() {
+  const client = new QueryClient();
+
   const router = createBrowserRouter([
     {
-      element: <AuthRoutes />,
+      path: "/",
+      element: <RootLayout />,
       children: [
         {
-          path: "/auth",
-          element: <AuthPage />,
-          action: authAction,
-        },
-      ],
-    },
-    {
-      element: <ProtectedRoutes />,
-      children: [
-        {
-          path: "/chats",
-          element: <ChatsPage />,
+          element: <AuthRoutes />,
           children: [
             {
-              path: "/chats/:chatId",
-              element: <Chat />,
+              path: "/auth",
+              element: <AuthPage />,
+              action: authAction,
+            },
+            {
+              path: "/verify",
+              element: <VerificationPage />,
+              action: verifyAction,
+            },
+          ],
+        },
+        {
+          element: <ProtectedRoutes />,
+          children: [
+            {
+              path: "/chats",
+              element: <ChatsPage />,
+              children: [
+                {
+                  path: "/chats/direct/:directId",
+                  element: <Chat />,
+                },
+              ],
             },
           ],
         },
       ],
     },
   ]);
-  return <RouterProvider router={router} />;
+  return (
+    <QueryClientProvider client={client}>
+      <RouterProvider router={router} />{" "}
+    </QueryClientProvider>
+  );
 }
 
 export default App;

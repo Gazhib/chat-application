@@ -7,6 +7,7 @@ const bcrypt = require("bcryptjs");
 const nodemailer = require("nodemailer");
 const { userModel } = require("./models");
 const { default: mongoose } = require("mongoose");
+const { transporter } = require("./mailer");
 require("dotenv").config({ path: "../.env" });
 app.use(
   cors({
@@ -74,6 +75,8 @@ app.post("/api/login", async (req, res) => {
     login,
     role,
     email: user.email,
+    isVerified: user.isVerified,
+    sub: user._id.toString(),
   };
 
   const accessToken = createAccessToken(userPayload);
@@ -99,7 +102,6 @@ app.post("/api/login", async (req, res) => {
 
 app.post("/api/registration", async (req, res) => {
   const { login, password, confirmPassword, email } = req.body;
-
   if (!trimmerCheck(login))
     return res.status(400).json("Login can not contain spaces");
   if (!trimmerCheck(password))
@@ -139,44 +141,48 @@ app.post("/api/registration", async (req, res) => {
   if (isEmail)
     return res.status(400).json("User with that Email already exists");
 
+  const code = String(Math.floor(100000 + Math.random() * 900000));
+  const expires = Date.now() + 15 * 60_000;
+
   const hashedPassword = await hashPassword(password);
 
   const role = "user";
-
-  const userPayload = {
-    login,
-    role,
-    email,
-  };
-
-  const accessToken = createAccessToken(userPayload);
-
-  const refreshToken = createRefreshToken(userPayload);
 
   const newUser = new userModel({
     login,
     role,
     email,
     password: hashedPassword,
+    verifyCode: code,
+    verifyCodeExpires: expires,
   });
 
   await newUser.save();
 
-  res.cookie("accessToken", accessToken, {
-    httpOnly: true,
-    secure: true,
-    sameSite: "strict",
-    maxAge: 3600000,
+  await transporter.sendMail({
+    to: email,
+    subject: "Your verification code",
+    text: `Your verification code is ${code}`,
   });
 
-  res.cookie("refreshToken", refreshToken, {
-    httpOnly: true,
-    secure: true,
-    sameSite: "strict",
-    maxAge: 3600000,
-  });
+  res.status(201).json("Check your email for the code");
+});
 
-  res.status(200).json("Registered in");
+app.post("/api/verify-email", async (req, res) => {
+  const { email, verifyCode } = req.body;
+  const user = await userModel.findOne({ email, verifyCode });
+  console.log(user);
+  if (!user || user.verifyCodeExpires < Date.now()) {
+    if (user) await userModel.deleteOne({ email });
+
+    return res.status(400).json("Expired or invalid verification code");
+  }
+
+  user.isVerified = true;
+  user.verifyCode = undefined;
+  user.verifyCodeExpires = undefined;
+  await user.save();
+  res.status(200).json("Email is verified, please login again");
 });
 
 app.get("/api/refresh", async (req, res) => {

@@ -16,8 +16,12 @@ export default function AuthRoutes() {
           return;
         }
         const responseData = await response.json();
-        const login = responseData.login;
-        if (login) setUser(login);
+        console.log(responseData);
+        if (responseData && responseData.isVerified) {
+          const login = responseData.login;
+
+          if (login) setUser(responseData);
+        }
       } catch (e) {
         console.log(e);
       } finally {

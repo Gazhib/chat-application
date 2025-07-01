@@ -10,7 +10,6 @@ export default function Auth({ mode }: Props) {
   const errorMessage = useActionData();
   const navigation = useNavigation();
   const isSubmitting = navigation.state === "submitting";
-  console.log(errorMessage);
   return (
     <Form
       method="post"
@@ -65,8 +64,21 @@ export default function Auth({ mode }: Props) {
             )}
           </div>
           <section className="w-full justify-center items-center">
-            <button className="rounded-[10px] h-[40px] cursor-pointer w-full bg-black hover:bg-black/70 text-white hover:text-gray-200">
-              {isLogin ? (isSubmitting ? "Logging in..." : "Login") : (isSubmitting ? "Registering..." : "Register")}
+            <button
+              style={{
+                backgroundColor: isSubmitting ? "#000000B3" : "",
+                color: isSubmitting ? "#E5E7EB" : "",
+              }}
+              disabled={isSubmitting}
+              className="rounded-[10px] h-[40px] cursor-pointer w-full bg-black hover:bg-black/70 text-white hover:text-gray-200"
+            >
+              {isLogin
+                ? isSubmitting
+                  ? "Logging in..."
+                  : "Login"
+                : isSubmitting
+                ? "Registering..."
+                : "Register"}
             </button>
           </section>
           <span className="flex flex-row gap-[5px]">

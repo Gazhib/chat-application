@@ -21,6 +21,13 @@ const userSchema = new Schema({
     type: String,
     required: true,
   },
+  isVerified: {
+    type: Boolean,
+    require: true,
+    default: false,
+  },
+  verifyCode: String,
+  verifyCodeExpires: Date,
 });
 
 const deviceSchema = new Schema({
@@ -59,6 +66,16 @@ const chatSchema = new Schema({
   ],
   seq: Number,
 });
+chatSchema.virtual("messages", {
+  ref: "message",
+  localField: "_id",
+  foreignField: "chatId",
+  justOne: false,
+  options: { sort: { seq: 1 }, limit: 50 },
+});
+
+chatSchema.set("toObject", { virtuals: true });
+chatSchema.set("toJSON", { virtuals: true });
 
 const membershipSchema = new Schema({
   chatId: {
