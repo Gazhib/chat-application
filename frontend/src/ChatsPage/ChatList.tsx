@@ -11,6 +11,8 @@ export default function ChatList() {
       });
       const responseData = await response.json();
 
+      if (!response.ok) return [];
+
       return responseData;
     },
   });
@@ -35,12 +37,12 @@ export default function ChatList() {
 
   return (
     <ul>
-      {data
+      {!isLoading && data
         ? data.map((user) => {
             return (
               <button
                 onClick={() => openChat(user._id)}
-                key={user.id}
+                key={user._id}
                 className="h-[60px] w-full items-center gap-[10px] flex flex-row border-b-[1px] border-[#333333] hover:bg-[#2E2F30] text-white cursor-pointer"
               >
                 <img

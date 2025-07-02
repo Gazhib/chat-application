@@ -10,6 +10,8 @@ import VerificationPage, {
 } from "./Pages/VerificationPage";
 import RootLayout from "./RootLayout";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { Provider } from "react-redux";
+import { store } from "./store/store";
 
 function App() {
   const client = new QueryClient();
@@ -53,9 +55,11 @@ function App() {
     },
   ]);
   return (
-    <QueryClientProvider client={client}>
-      <RouterProvider router={router} />{" "}
-    </QueryClientProvider>
+    <Provider store={store}>
+      <QueryClientProvider client={client}>
+        <RouterProvider router={router} />{" "}
+      </QueryClientProvider>
+    </Provider>
   );
 }
 

@@ -43,17 +43,16 @@ const tokenMiddleware = (req, res, next) => {
   });
 };
 
-app.post("/send-message", async (req, res) => {
-  const { chatId, senderId, cipher, meta } = req.body;
+const server = http.createServer(app);
+
+const io = initSocket(server);
+
+app.post("/send-message", tokenMiddleware, async (req, res) => {
+  const { directId, cipher, meta } = req.body;
   // const createdAt = Date.now();
   // const msg = new messageModel({ chatId, cipher, senderId });
-
-  io.to(chatId).emit("message", {
-    chatId,
-    senderId,
-    meta,
-  });
-  res.status(200).json({ chatId, senderId });
+  const senderId = req.userPayload.sub;
+  res.status(200).json({ directId, senderId });
 });
 
 app.get("/get-users", tokenMiddleware, async (req, res) => {
@@ -98,7 +97,6 @@ app.post("/get-messages", tokenMiddleware, async (req, res) => {
     .populate({ path: "messages", options: { limit: 50, sort: { seq: 1 } } })
     .exec();
 
-
   if (!chat || !chat.membershipIds.includes(userId)) {
     return res.status(404).json({ message: "Invalid chat" });
   }
@@ -107,16 +105,12 @@ app.post("/get-messages", tokenMiddleware, async (req, res) => {
 });
 
 app.get("/me", tokenMiddleware, async (req, res) => {
-  const { login, role, email, isVerified } = req.userPayload;
+  const { login, role, email, isVerified, sub } = req.userPayload;
   if (!req.userPayload || !login || !role) {
     res.status(401).json("Unauthorized");
   }
-  res.status(200).json({ login, role, email, isVerified });
+  res.status(200).json({ id: sub, login, role, email, isVerified });
 });
-
-const server = http.createServer(app);
-
-const io = initSocket(server);
 
 server.listen(3000, () => {
   console.log("server started at 3000");

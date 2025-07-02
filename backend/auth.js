@@ -171,7 +171,6 @@ app.post("/api/registration", async (req, res) => {
 app.post("/api/verify-email", async (req, res) => {
   const { email, verifyCode } = req.body;
   const user = await userModel.findOne({ email, verifyCode });
-  console.log(user);
   if (!user || user.verifyCodeExpires < Date.now()) {
     if (user) await userModel.deleteOne({ email });
 
@@ -187,7 +186,12 @@ app.post("/api/verify-email", async (req, res) => {
 
 app.get("/api/refresh", async (req, res) => {
   const refreshToken = req.cookies.refreshToken;
-  const payload = jwt.verify(refreshToken, refreshSecretKey);
+  let payload;
+  try {
+    payload = jwt.verify(refreshToken, refreshSecretKey);
+  } catch (e) {
+    return res.status(401).json("Invalid or expired token");
+  }
   const newAccessToken = jwt.sign(payload, accessSecretKey, {
     expiresIn: "15m",
   });
@@ -197,6 +201,7 @@ app.get("/api/refresh", async (req, res) => {
     sameSite: "strict",
     maxAge: 3600000,
   });
+  return res.status(200).json({ user: payload.user, role: payload.role });
 });
 
 app.listen(4000, () => {
