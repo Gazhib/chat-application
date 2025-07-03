@@ -2,7 +2,6 @@ import { useEffect, useState } from "react";
 import { Navigate, Outlet, useNavigate } from "react-router";
 import { getInfo } from "../store/userReducer";
 import { useAppDispatch } from "../store/hooks";
-import { socket } from "../socket";
 
 export default function ProtectedRoutes() {
   const [user, setUser] = useState(null);
@@ -55,7 +54,6 @@ export default function ProtectedRoutes() {
     };
     checkUser();
   }, []);
-
 
   if (!checked) return null;
   return user ? <Outlet /> : <Navigate to="/auth?mode=login" />;

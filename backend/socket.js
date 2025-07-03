@@ -6,6 +6,8 @@ import dotenv from "dotenv";
 dotenv.config({ path: "../.env" });
 const accessSecretKey = process.env.ACCESS_SECRET;
 export function initSocket(httpServer) {
+  const onlineUsers = {};
+
   const io = new Server(httpServer, {
     path: "/socket.io",
     cors: {
@@ -43,13 +45,18 @@ export function initSocket(httpServer) {
   });
 
   io.on("connection", (socket) => {
-    socket.on("joinRoom", (directId) => {
-      socket.join(directId);
+    const userId = socket.data.user.id;
+    onlineUsers[userId] = socket.id;
+
+    socket.broadcast.emit("status", { userId, status: "Online" });
+
+    socket.on("joinRoom", (chatId) => {
+      socket.join(chatId);
     });
 
-    socket.on("chatMessage", ({ directId, meta, senderId }) => {
-      io.to(directId).emit("chatMessage", {
-        directId,
+    socket.on("chatMessage", ({ chatId, meta, senderId }) => {
+      io.to(chatId).emit("chatMessage", {
+        chatId,
         meta,
         senderId,
       });

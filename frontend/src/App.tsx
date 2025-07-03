@@ -44,7 +44,7 @@ function App() {
               element: <ChatsPage />,
               children: [
                 {
-                  path: "/chats/direct/:directId",
+                  path: "/chats/:chatId",
                   element: <Chat />,
                 },
               ],

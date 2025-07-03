@@ -3,4 +3,5 @@ export const socket = io("http://localhost:3000", {
   path: "/socket.io",
   withCredentials: true,
   transports: ["websocket"],
+  autoConnect: true,
 });

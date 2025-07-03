@@ -8,15 +8,15 @@ import { socket } from "../socket";
 import { useAppSelector } from "../store/hooks";
 
 export default function Chat() {
-  const { directId } = useParams();
+  const { chatId } = useParams();
   const navigate = useNavigate();
 
   const { data, isLoading } = useQuery({
-    queryKey: [directId],
+    queryKey: [chatId],
     queryFn: async () => {
-      const response = await fetch("http://localhost:3000/get-messages", {
+      const response = await fetch("http://localhost:3000/get-chat-info", {
         method: "POST",
-        body: JSON.stringify({ directId }),
+        body: JSON.stringify({ chatId }),
         headers: {
           "Content-Type": "application/json",
         },
@@ -32,9 +32,9 @@ export default function Chat() {
   });
 
   useEffect(() => {
-    if (!directId) return;
-    socket.emit("joinRoom", directId);
-  }, [directId]);
+    if (!chatId) return;
+    socket.emit("joinRoom", chatId);
+  }, [chatId]);
 
   const [messages, setMessages] = useState(data ? data : []);
 
@@ -42,6 +42,8 @@ export default function Chat() {
     const handler = (msg) => {
       setMessages((prev) => [...prev, msg]);
     };
+
+
 
     socket.on("chatMessage", handler);
 
@@ -55,7 +57,7 @@ export default function Chat() {
   const handleSendMessage = async () => {
     const response = await fetch("http://localhost:3000/send-message", {
       method: "POST",
-      body: JSON.stringify({ directId, meta: typed, senderId: info.id }),
+      body: JSON.stringify({ chatId, meta: typed, senderId: info.id }),
       credentials: "include",
       headers: {
         "Content-Type": "application/json",
@@ -66,8 +68,7 @@ export default function Chat() {
       console.log("something went wrong");
       return;
     }
-
-    socket.emit("chatMessage", { directId, meta: typed, senderId: info.id });
+    socket.emit("chatMessage", { chatId, meta: typed, senderId: info.id });
   };
 
   const handleTyped = (value: string) => {
@@ -79,12 +80,13 @@ export default function Chat() {
 
   return (
     <section className="h-full flex flex-col flex-1 bg-[#1E1F22]">
-      <ChatHeader name="John" status="Online" />
+      <ChatHeader id={chatId || ""} myId={info.id} />
       <main className="h-[calc(100%-110px)] flex flex-col justify-end px-[20px] pb-[20px] overflow-y-auto gap-[10px]">
         {!isLoading && messages
           ? messages.map((message) => {
               return (
                 <MessageBubble
+                  key={message}
                   message={message.meta}
                   place={message.senderId === info.id ? "left" : "right"}
                 />

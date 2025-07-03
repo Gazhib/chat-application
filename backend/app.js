@@ -48,11 +48,11 @@ const server = http.createServer(app);
 const io = initSocket(server);
 
 app.post("/send-message", tokenMiddleware, async (req, res) => {
-  const { directId, cipher, meta } = req.body;
+  const { chatId, cipher, meta } = req.body;
   // const createdAt = Date.now();
   // const msg = new messageModel({ chatId, cipher, senderId });
   const senderId = req.userPayload.sub;
-  res.status(200).json({ directId, senderId });
+  res.status(200).json({ chatId, senderId });
 });
 
 app.get("/get-users", tokenMiddleware, async (req, res) => {
@@ -63,9 +63,9 @@ app.get("/get-users", tokenMiddleware, async (req, res) => {
   res.status(200).json(users);
 });
 
-app.post("/chats/direct/:directId", tokenMiddleware, async (req, res) => {
+app.post("/chats/:chatId", tokenMiddleware, async (req, res) => {
   const myId = req.userPayload.sub;
-  const otherId = req.params.directId;
+  const otherId = req.params.chatId;
 
   let chat = await chatModel.findOne({
     chatType: "DIRECT",
@@ -88,12 +88,12 @@ app.post("/chats/direct/:directId", tokenMiddleware, async (req, res) => {
   res.status(200).json({ chatId: chat._id.toString() });
 });
 
-app.post("/get-messages", tokenMiddleware, async (req, res) => {
-  const { directId } = req.body;
+app.post("/get-chat-info", tokenMiddleware, async (req, res) => {
+  const { chatId } = req.body;
   const userId = req.userPayload.sub;
 
   const chat = await chatModel
-    .findById(directId)
+    .findById(chatId)
     .populate({ path: "messages", options: { limit: 50, sort: { seq: 1 } } })
     .exec();
 
@@ -102,6 +102,30 @@ app.post("/get-messages", tokenMiddleware, async (req, res) => {
   }
 
   return res.status(200).json(chat);
+});
+
+app.post("/get-companion-info", tokenMiddleware, async (req, res) => {
+  const { chatId, myId } = req.body;
+  const chat = await chatModel.findById(chatId);
+
+  if (!chat || !chat.membershipIds.includes(myId)) {
+    return res.status(404).json({ message: "Invalid chat" });
+  }
+
+  const membershipIds = chat.membershipIds;
+
+  const companionId = membershipIds.find(
+    (id) => id.toString() !== myId.toString()
+  );
+
+  if (companionId) {
+    const user = await userModel
+      .findOne({ _id: companionId })
+      .select("_id login");
+    return res.status(200).json(user);
+  }
+
+  return res.status(400).json("Something went wrong...");
 });
 
 app.get("/me", tokenMiddleware, async (req, res) => {
