@@ -1,4 +1,3 @@
-
 type Props = {
   typed: string;
   handleTyped: (value: string) => void;
@@ -17,8 +16,11 @@ export default function ChatInput({
         onChange={(e) => {
           handleTyped(e.target.value);
         }}
+        onKeyDown={(e) => {
+          if (e.key === "Enter") handleSendMessage();
+        }}
         placeholder="Message..."
-        className="h-full w-full placeholder-[#72767D] text-white text-[14px] px-[10px]"
+        className="h-full w-full focus:outline-none placeholder-[#72767D] text-white text-[14px] px-[10px]"
       />
       <button
         onClick={() => handleSendMessage()}

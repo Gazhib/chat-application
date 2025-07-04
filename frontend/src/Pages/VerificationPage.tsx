@@ -1,4 +1,9 @@
-import { Form, useActionData, useSearchParams } from "react-router";
+import {
+  Form,
+  useActionData,
+  useNavigation,
+  useSearchParams,
+} from "react-router";
 
 export default function VerificationPage() {
   const [searchParams] = useSearchParams();
@@ -6,6 +11,10 @@ export default function VerificationPage() {
   const email = searchParams.get("email");
 
   const actionData = useActionData();
+
+  const navigation = useNavigation();
+
+  const isSubmitting = navigation.state === "submitting";
 
   return (
     <Form
@@ -27,10 +36,11 @@ export default function VerificationPage() {
         placeholder="6-digit code"
       />
       <button
+        disabled={isSubmitting}
         type="submit"
         className="h-[40px] w-[250px] cursor-pointer px-[15px] text-[14px] border-[1px] rounded-[6px] border-[rgba(218,218,218,1)] hover:bg-grey-300"
       >
-        Verify
+        {isSubmitting ? "Veryfying" : "Verify"}
       </button>
       {actionData && actionData.isFail && (
         <span className="text-red-600">{actionData.message}</span>
@@ -44,9 +54,6 @@ export async function action({ request }: { request: Request }) {
   const fd = await request.formData();
   const email = fd.get("email");
   const verifyCode = fd.get("code");
-
-  console.log(email, verifyCode);
-
   const response = await fetch("http://localhost:4000/api/verify-email", {
     method: "POST",
     body: JSON.stringify({ email, verifyCode }),

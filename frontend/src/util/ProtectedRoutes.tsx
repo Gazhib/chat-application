@@ -16,6 +16,18 @@ export default function ProtectedRoutes() {
           credentials: "include",
         });
         if (!response.ok) {
+          const refreshResponse = await fetch(
+            "http://localhost:4000/api/refresh",
+            {
+              method: "GET",
+              credentials: "include",
+            }
+          );
+          if (refreshResponse.ok) {
+            console.log("here");
+            return;
+          }
+
           setUser(null);
           dispatch(
             getInfo({

@@ -13,4 +13,5 @@ export type MessageSchema = {
     data: string;
     tag: string;
   };
+  meta: string;
 };

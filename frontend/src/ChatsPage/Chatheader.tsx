@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
-import { socket } from "../socket";
+import { usePersonalSocket } from "../features/hooks";
 
 type Props = {
   id: string;
@@ -30,17 +30,19 @@ export default function ChatHeader({ id, myId }: Props) {
     },
   });
 
-  useEffect(() => {
-    if (!info) return;
-    const handleStatus = ({ userId, status, lastSeen }) => {
-      console.log(userId, info);
-      if (userId === info._id) {
-        setStatus({ status, lastSeen });
-      }
-    };
+  const { onlineUsers } = usePersonalSocket(myId);
 
-    socket.on("status", handleStatus);
-  }, [info]);
+  useEffect(() => {
+    if (info) {
+      if (onlineUsers.includes(info._id))
+        setStatus({ status: "Online", lastSeen: "now" });
+      else
+        setStatus({
+          status: "Offline",
+          lastSeen: "Long time ago",
+        });
+    }
+  }, [info, onlineUsers, info && info._id]);
 
   return (
     <header className="z-1 px-[20px] h-[60px] border-b-[1px] border-[#333333] flex flex-row text-white w-full justify-between items-center bg-[#242526] ">

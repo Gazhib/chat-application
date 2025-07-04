@@ -19,7 +19,6 @@ export const userSlice = createSlice({
   initialState,
   reducers: {
     getInfo: (state, action: PayloadAction<userTypes>) => {
-      console.log(action.payload);
       state.email = action.payload.email
       state.login = action.payload.login
       state.role = action.payload.role

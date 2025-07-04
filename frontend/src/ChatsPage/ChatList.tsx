@@ -1,10 +1,17 @@
 import { useNavigate } from "react-router";
 import pp from "/pp.png";
 import { useQuery } from "@tanstack/react-query";
+
+type User = {
+  login: string;
+  lastMessage: string;
+  _id: string;
+};
+
 export default function ChatList() {
   const { data, isLoading } = useQuery({
     queryKey: ["chats"],
-    queryFn: async () => {
+    queryFn: async (): Promise<User[]> => {
       const response = await fetch("http://localhost:3000/get-users", {
         method: "GET",
         credentials: "include",
@@ -20,16 +27,13 @@ export default function ChatList() {
   const navigate = useNavigate();
 
   const openChat = async (otherUserId: string) => {
-    const response = await fetch(
-      `http://localhost:3000/chats/${otherUserId}`,
-      {
-        method: "POST",
-        credentials: "include",
-        headers: {
-          "Content-Type": "application/json",
-        },
-      }
-    );
+    const response = await fetch(`http://localhost:3000/chats/${otherUserId}`, {
+      method: "POST",
+      credentials: "include",
+      headers: {
+        "Content-Type": "application/json",
+      },
+    });
 
     const responseData = await response.json();
     navigate(`/chats/${responseData.chatId}`);

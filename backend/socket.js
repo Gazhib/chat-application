@@ -47,8 +47,7 @@ export function initSocket(httpServer) {
   io.on("connection", (socket) => {
     const userId = socket.data.user.id;
     onlineUsers[userId] = socket.id;
-
-    socket.broadcast.emit("status", { userId, status: "Online" });
+    io.emit("onlineList", { onlineUsersIds: Object.keys(onlineUsers) });
 
     socket.on("joinRoom", (chatId) => {
       socket.join(chatId);
@@ -63,7 +62,8 @@ export function initSocket(httpServer) {
     });
 
     socket.on("disconnect", (reason) => {
-      console.log("Disconnected", reason);
+      delete onlineUsers[userId];
+      io.emit("onlineList", { onlineUsersIds: Object.keys(onlineUsers) });
     });
   });
 

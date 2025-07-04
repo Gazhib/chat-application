@@ -60,6 +60,7 @@ app.get("/get-users", tokenMiddleware, async (req, res) => {
   const users = await userModel
     .find({ _id: { $ne: myId } })
     .select("_id login");
+
   res.status(200).json(users);
 });
 
