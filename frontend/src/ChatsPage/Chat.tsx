@@ -1,24 +1,25 @@
-import { useParams } from "react-router";
+import {
+  useLoaderData,
+  useParams,
+  type LoaderFunctionArgs,
+} from "react-router";
 import ChatHeader from "./Chatheader";
 import ChatInput from "./ChatInput";
 import MessageBubble from "./MessageBubble";
-import { useQuery } from "@tanstack/react-query";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useAppSelector } from "../store/hooks";
 import type { MessageSchema } from "../types";
 import {
-  useChatMessages,
+  // getChatMessages,
   usePersonalSocket,
   useSendMessage,
 } from "../features/hooks";
+import useStore from "../store/personalZustand";
+import { decryptMessage, getSharedKey } from "../features/functions";
 
 export default function Chat() {
   const { chatId } = useParams();
-
-  const { data: initialMessages, isLoading: areMessagesLoading } = useQuery({
-    queryKey: [chatId],
-    queryFn: () => useChatMessages(chatId || ""),
-  });
+  const initialMessages = useLoaderData();
 
   const [messages, setMessages] = useState<MessageSchema[]>(
     initialMessages ? initialMessages : []
@@ -28,18 +29,56 @@ export default function Chat() {
   const info = useAppSelector((state) => state.user);
   const personalSocket = usePersonalSocket(info.id, setMessages);
   personalSocket.joinRoom(chatId || "");
+  const keyPairs = useStore((state) => state?.keyPairs);
 
-  
+  const [sharedKey, setSharedKey] = useState<CryptoKey>();
+
+  const changeSharedKey = useStore((state) => state.changeSharedKey);
+
+  useEffect(() => {
+    async function decryptMessages() {
+      if (initialMessages.length > 0 && sharedKey) {
+        for (let message of initialMessages) {
+          const newMessage = await decryptMessage(sharedKey, {
+            iv: message.cipher.iv,
+            data: message.cipher.data,
+          });
+          message.meta = newMessage;
+        }
+      }
+      setMessages(initialMessages);
+    }
+    decryptMessages();
+  }, [initialMessages, sharedKey]);
+
   const handleSendMessage = () => {
-    useSendMessage(typed, chatId || "", info.id, setTyped);
-    personalSocket.sendMessage(chatId || "", typed, info.id);
+    if (sharedKey) {
+      useSendMessage(typed, chatId || "", info.id, sharedKey);
+      personalSocket.sendMessage(chatId || "", typed, info.id);
+    }
+    setTyped("");
   };
+
+  useEffect(() => {
+    async function handle() {
+      if (chatId && info && info.id && keyPairs) {
+        const newSharedKey = await getSharedKey(
+          chatId,
+          info.id,
+          keyPairs.privateKey
+        );
+        setSharedKey(newSharedKey);
+        changeSharedKey(newSharedKey);
+      }
+    }
+    handle();
+  }, [chatId, info, keyPairs]);
 
   return (
     <section className="h-full flex flex-col flex-1 bg-[#1E1F22]">
       <ChatHeader id={chatId || ""} myId={info.id} />
       <main className="h-[calc(100%-110px)] flex flex-col justify-end px-[20px] pb-[20px] overflow-y-auto gap-[10px]">
-        {!areMessagesLoading && messages
+        {messages
           ? messages.map((message, index) => {
               return (
                 <MessageBubble
@@ -58,4 +97,21 @@ export default function Chat() {
       />
     </section>
   );
+}
+
+export async function loader({ params }: LoaderFunctionArgs) {
+  const chatId = params.chatId;
+  const response = await fetch("http://localhost:3000/get-chat-info", {
+    method: "POST",
+    body: JSON.stringify({ chatId }),
+    headers: {
+      "Content-Type": "application/json",
+    },
+    credentials: "include",
+  });
+  if (!response.ok) throw new Error("Chat not found");
+
+  const { messages } = await response.json();
+
+  return messages;
 }

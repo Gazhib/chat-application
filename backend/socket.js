@@ -53,10 +53,10 @@ export function initSocket(httpServer) {
       socket.join(chatId);
     });
 
-    socket.on("chatMessage", ({ chatId, meta, senderId }) => {
+    socket.on("chatMessage", ({ chatId, cipher, senderId }) => {
       io.to(chatId).emit("chatMessage", {
         chatId,
-        meta,
+        cipher,
         senderId,
       });
     });

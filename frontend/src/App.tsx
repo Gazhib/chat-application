@@ -4,7 +4,7 @@ import AuthPage, { action as authAction } from "./Pages/AuthPage";
 import ChatsPage from "./Pages/ChatsPage";
 import AuthRoutes from "./util/AuthRoutes";
 import ProtectedRoutes from "./util/ProtectedRoutes";
-import Chat from "./ChatsPage/Chat";
+import Chat, { loader as messagesLoader } from "./ChatsPage/Chat";
 import VerificationPage, {
   action as verifyAction,
 } from "./Pages/VerificationPage";
@@ -46,6 +46,7 @@ function App() {
                 {
                   path: "/chats/:chatId",
                   element: <Chat />,
+                  loader: messagesLoader
                 },
               ],
             },

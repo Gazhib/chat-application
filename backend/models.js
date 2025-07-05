@@ -23,8 +23,11 @@ const userSchema = new Schema({
   },
   isVerified: {
     type: Boolean,
-    require: true,
+    required: true,
     default: false,
+  },
+  publicKey: {
+    type: String,
   },
   verifyCode: String,
   verifyCodeExpires: Date,
@@ -122,7 +125,6 @@ const messageSchema = new Schema({
   cipher: {
     iv: String,
     data: String,
-    tag: String,
   },
 });
 

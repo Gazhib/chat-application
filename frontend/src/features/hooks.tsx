@@ -1,38 +1,31 @@
-import { useNavigate } from "react-router";
 import type { MessageSchema } from "../types";
 import React, { useEffect, useState } from "react";
 import { socket } from "../socket";
-
-export const useChatMessages = async (
-  chatId: string
-): Promise<MessageSchema[]> => {
-  const navigate = useNavigate();
-  const response = await fetch("http://localhost:3000/get-chat-info", {
-    method: "POST",
-    body: JSON.stringify({ chatId }),
-    headers: {
-      "Content-Type": "application/json",
-    },
-    credentials: "include",
-  });
-  if (!response.ok) {
-    navigate("/chats");
-  }
-
-  const responseData = await response.json();
-  return responseData.messages;
-};
+import { decryptMessage, encryptMessage } from "./functions";
+import useStore from "../store/personalZustand";
 
 export const useSendMessage = async (
   typed: string,
   chatId: string,
   senderId: string,
-  setTyped: (typed: string) => void
+  sharedKey: CryptoKey
 ) => {
   if (typed.trim() === "") return;
+
+  const { ivBuffer, dataBuffer } = await encryptMessage(typed, sharedKey);
+
+  const message = {
+    chatId,
+    senderId,
+    cipher: {
+      iv: ivBuffer,
+      data: dataBuffer,
+    },
+  };
+
   const response = await fetch("http://localhost:3000/send-message", {
     method: "POST",
-    body: JSON.stringify({ chatId, meta: typed, senderId }),
+    body: JSON.stringify(message),
     credentials: "include",
     headers: {
       "Content-Type": "application/json",
@@ -42,14 +35,12 @@ export const useSendMessage = async (
     console.log("something went wrong");
     return;
   }
-
-  setTyped("");
 };
 
 type setMessages = React.Dispatch<React.SetStateAction<MessageSchema[]>>;
 export const usePersonalSocket = (id: string, setMessages?: setMessages) => {
   const [onlineUsers, setOnlineUsers] = useState<string[]>([]);
-
+  const sharedKey = useStore((state) => state?.sharedKey);
   useEffect(() => {
     if (id !== "") {
       if (!socket.connected) {
@@ -61,8 +52,23 @@ export const usePersonalSocket = (id: string, setMessages?: setMessages) => {
     }
   }, [id]);
 
-  const sendMessage = (chatId: string, typed: string, senderId: string) => {
-    socket.emit("chatMessage", { chatId, meta: typed, senderId });
+  const sendMessage = async (
+    chatId: string,
+    typed: string,
+    senderId: string
+  ) => {
+    const { ivBuffer, dataBuffer } = await encryptMessage(typed, sharedKey);
+
+    const message = {
+      chatId,
+      senderId,
+      cipher: {
+        iv: ivBuffer,
+        data: dataBuffer,
+      },
+    };
+
+    socket.emit("chatMessage", message);
   };
 
   const joinRoom = (chatId: string) => {
@@ -71,7 +77,13 @@ export const usePersonalSocket = (id: string, setMessages?: setMessages) => {
   };
 
   useEffect(() => {
-    const handler = (msg: MessageSchema) => {
+    const handler = async (msg: MessageSchema) => {
+      console.log(msg);
+      const newMessage = await decryptMessage(sharedKey, {
+        iv: msg.cipher.iv,
+        data: msg.cipher.data,
+      });
+      msg.meta = newMessage;
       if (setMessages) setMessages((prevMessages) => [...prevMessages, msg]);
     };
 
@@ -88,7 +100,6 @@ export const usePersonalSocket = (id: string, setMessages?: setMessages) => {
     }: {
       onlineUsersIds: string[];
     }) => {
-      console.log(onlineUsersIds);
       setOnlineUsers(onlineUsersIds);
     };
 

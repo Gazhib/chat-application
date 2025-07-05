@@ -48,11 +48,17 @@ const server = http.createServer(app);
 const io = initSocket(server);
 
 app.post("/send-message", tokenMiddleware, async (req, res) => {
-  const { chatId, cipher, meta } = req.body;
-  // const createdAt = Date.now();
-  // const msg = new messageModel({ chatId, cipher, senderId });
-  const senderId = req.userPayload.sub;
-  res.status(200).json({ chatId, senderId });
+  const { chatId, senderId, cipher } = req.body;
+
+  const newMessage = new messageModel({
+    chatId,
+    senderId,
+    cipher,
+  });
+
+  newMessage.save();
+
+  res.status(200).json({ chatId, senderId, cipher });
 });
 
 app.get("/get-users", tokenMiddleware, async (req, res) => {
@@ -127,6 +133,44 @@ app.post("/get-companion-info", tokenMiddleware, async (req, res) => {
   }
 
   return res.status(400).json("Something went wrong...");
+});
+
+app.post("/public-key", tokenMiddleware, async (req, res) => {
+  const { publicKey } = req.body;
+  const userId = req.userPayload.sub;
+
+  const user = await userModel.findById(userId);
+  if (!user) {
+    return res
+      .status(400)
+      .json("Something went wrong... Could not find the user");
+  }
+
+  user.publicKey = publicKey;
+  await user.save();
+  return res.status(200).json("Public key is saved");
+});
+
+app.post("/peer-public-key", tokenMiddleware, async (req, res) => {
+  const { chatId, myId } = req.body;
+  const chat = await chatModel.findById(chatId);
+  if (!chat) {
+    return res
+      .status(400)
+      .json("Something went wrong... Could not find the user");
+  }
+
+  const membershipIds = chat.membershipIds;
+
+  const userId = membershipIds.find((id) => id.toString() !== myId.toString());
+  const user = await userModel.findById(userId);
+  if (!user || !user.publicKey) {
+    return res
+      .status(400)
+      .json("Something went wrong... Could not find the user");
+  }
+
+  return res.status(200).json({ publicKey: user.publicKey });
 });
 
 app.get("/me", tokenMiddleware, async (req, res) => {

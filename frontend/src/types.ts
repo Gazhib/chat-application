@@ -11,7 +11,6 @@ export type MessageSchema = {
   cipher: {
     iv: string;
     data: string;
-    tag: string;
   };
   meta: string;
 };
