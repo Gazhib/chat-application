@@ -35,12 +35,24 @@ const hashPassword = async (password) => {
   return hashedPassword;
 };
 
-const createAccessToken = (payload) => {
-  return jwt.sign(payload, accessSecretKey, { expiresIn: "15m" });
+const createAccessToken = (payload, res) => {
+  const accessToken = jwt.sign(payload, accessSecretKey, { expiresIn: "15m" });
+  res.cookie("accessToken", accessToken, {
+    httpOnly: true,
+    secure: true,
+    sameSite: "strict",
+    maxAge: 3600000,
+  });
 };
 
-const createRefreshToken = (payload) => {
-  return jwt.sign(payload, refreshSecretKey);
+const createRefreshToken = (payload, res) => {
+  const refreshToken = jwt.sign(payload, refreshSecretKey, { expiresIn: "1w" });
+  res.cookie("refreshToken", refreshToken, {
+    httpOnly: true,
+    secure: true,
+    sameSite: "strict",
+    maxAge: 3600000,
+  });
 };
 
 const trimmerCheck = (word) => {
@@ -79,23 +91,9 @@ app.post("/api/login", async (req, res) => {
     sub: user._id.toString(),
   };
 
-  const accessToken = createAccessToken(userPayload);
+  createAccessToken(userPayload, res);
 
-  const refreshToken = createRefreshToken(userPayload);
-
-  res.cookie("accessToken", accessToken, {
-    httpOnly: true,
-    secure: true,
-    sameSite: "strict",
-    maxAge: 3600000,
-  });
-
-  res.cookie("refreshToken", refreshToken, {
-    httpOnly: true,
-    secure: true,
-    sameSite: "strict",
-    maxAge: 3600000,
-  });
+  createRefreshToken(userPayload, res);
 
   res.status(200).json("Logged in");
 });
@@ -181,7 +179,19 @@ app.post("/api/verify-email", async (req, res) => {
   user.verifyCode = undefined;
   user.verifyCodeExpires = undefined;
   await user.save();
-  res.status(200).json("Email is verified, please login again");
+  const userPayload = {
+    login: user.login,
+    email,
+    sub: user._id,
+    role: "USER",
+    isVerified: true,
+  };
+
+  createAccessToken(userPayload, res);
+
+  createRefreshToken(userPayload, res);
+
+  res.status(200).json("Successfully registered");
 });
 
 app.get("/api/refresh", async (req, res) => {
@@ -192,16 +202,24 @@ app.get("/api/refresh", async (req, res) => {
   } catch (e) {
     return res.status(401).json("Invalid or expired token");
   }
-  const newAccessToken = jwt.sign(payload, accessSecretKey, {
-    expiresIn: "15m",
+  res.cookie("accessToken", "");
+  delete payload.iat;
+  delete payload.exp;
+  createAccessToken(payload, res);
+
+  return res.status(200).json({
+    email: payload.email,
+    isVerified: payload.isVerified,
+    login: payload.login,
+    role: payload.role,
+    id: payload.sub,
   });
-  res.cookie("accessToken", newAccessToken, {
-    httpOnly: true,
-    secure: true,
-    sameSite: "strict",
-    maxAge: 3600000,
-  });
-  return res.status(200).json({ user: payload.user, role: payload.role });
+});
+
+app.get("/api/logout", async (req, res) => {
+  res.clearCookie("accessToken");
+  res.clearCookie("refreshToken");
+  res.status(200).json("Logged out");
 });
 
 app.listen(4000, () => {

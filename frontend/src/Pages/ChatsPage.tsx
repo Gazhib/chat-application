@@ -1,5 +1,5 @@
 import { Outlet } from "react-router";
-import Sidebar from "../ChatsPage/Sidebar";
+import ChatSidebar from "../ChatsPage/ChatSidebar";
 import { useAppSelector } from "../store/hooks";
 import { usePersonalSocket } from "../features/hooks";
 import useStore from "../store/personalZustand";
@@ -19,8 +19,8 @@ export default function ChatsPage() {
   }, [user.id]);
 
   return (
-    <main className="h-full bg-[#18191A] flex flex-row">
-      <Sidebar />
+    <main className="h-full bg-[#18191A] w-[calc(100%-50px)] flex flex-row">
+      <ChatSidebar />
       <Outlet />
     </main>
   );

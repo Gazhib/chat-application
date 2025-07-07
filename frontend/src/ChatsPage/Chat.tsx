@@ -1,4 +1,5 @@
 import {
+  redirect,
   useLoaderData,
   useParams,
   type LoaderFunctionArgs,
@@ -10,7 +11,6 @@ import { useEffect, useState } from "react";
 import { useAppSelector } from "../store/hooks";
 import type { MessageSchema } from "../types";
 import {
-  // getChatMessages,
   usePersonalSocket,
   useSendMessage,
 } from "../features/hooks";
@@ -21,9 +21,7 @@ export default function Chat() {
   const { chatId } = useParams();
   const initialMessages = useLoaderData();
 
-  const [messages, setMessages] = useState<MessageSchema[]>(
-    initialMessages ? initialMessages : []
-  );
+  const [messages, setMessages] = useState<MessageSchema[]>([]);
 
   const [typed, setTyped] = useState("");
   const info = useAppSelector((state) => state.user);
@@ -38,20 +36,23 @@ export default function Chat() {
   useEffect(() => {
     async function decryptMessages() {
       if (initialMessages.length > 0 && sharedKey) {
-        for (let message of initialMessages) {
-          const newMessage = await decryptMessage(sharedKey, {
-            iv: message.cipher.iv,
-            data: message.cipher.data,
-          });
-          message.meta = newMessage;
-        }
+        const decrypted = await Promise.all(
+          initialMessages.map(async (message: MessageSchema) => {
+            const newMessage = await decryptMessage(sharedKey, {
+              iv: message.cipher.iv,
+              data: message.cipher.data,
+            });
+            return { ...message, meta: newMessage };
+          })
+        );
+        setMessages(decrypted);
       }
-      setMessages(initialMessages);
     }
     decryptMessages();
   }, [initialMessages, sharedKey]);
 
   const handleSendMessage = () => {
+    if (typed === "") return;
     if (sharedKey) {
       useSendMessage(typed, chatId || "", info.id, sharedKey);
       personalSocket.sendMessage(chatId || "", typed, info.id);
@@ -77,14 +78,14 @@ export default function Chat() {
   return (
     <section className="h-full flex flex-col flex-1 bg-[#1E1F22]">
       <ChatHeader id={chatId || ""} myId={info.id} />
-      <main className="h-[calc(100%-110px)] flex flex-col justify-end px-[20px] pb-[20px] overflow-y-auto gap-[10px]">
+      <main className="h-[calc(100%-110px)] w-[calc(100vw-290px)] flex flex-col justify-end px-[20px] pb-[20px] overflow-y-auto gap-[10px]">
         {messages
           ? messages.map((message, index) => {
               return (
                 <MessageBubble
                   key={`${message.createdAt}-${message.meta}-${index}`}
                   message={message.meta}
-                  place={message.senderId === info.id ? "left" : "right"}
+                  place={message.senderId !== info.id ? "left" : "right"}
                 />
               );
             })
@@ -109,7 +110,7 @@ export async function loader({ params }: LoaderFunctionArgs) {
     },
     credentials: "include",
   });
-  if (!response.ok) throw new Error("Chat not found");
+  if (!response.ok) return redirect("/auth?mode=login");
 
   const { messages } = await response.json();
 

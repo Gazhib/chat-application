@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Navigate, Outlet, useNavigate } from "react-router";
 import { getInfo } from "../store/userReducer";
 import { useAppDispatch } from "../store/hooks";
+import Sidebar from "../shared/Sidebar";
 
 export default function ProtectedRoutes() {
   const [user, setUser] = useState(null);
@@ -11,10 +12,11 @@ export default function ProtectedRoutes() {
   useEffect(() => {
     const checkUser = async () => {
       try {
-        const response = await fetch("http://localhost:3000/me", {
+        let response = await fetch("http://localhost:3000/me", {
           method: "GET",
           credentials: "include",
         });
+
         if (!response.ok) {
           const refreshResponse = await fetch(
             "http://localhost:4000/api/refresh",
@@ -24,49 +26,76 @@ export default function ProtectedRoutes() {
             }
           );
           if (refreshResponse.ok) {
-            console.log("here");
+            const { email, isVerified, login, role, id } =
+              await refreshResponse.json();
+
+            response = await fetch("http://localhost:3000/me", {
+              method: "GET",
+              credentials: "include",
+            });
+
+            if (!response.ok) {
+              throw new Error("Could not authenticate");
+            }
+
+            if (isVerified) {
+              dispatch(
+                getInfo({
+                  email,
+                  login,
+                  role,
+                  id,
+                })
+              );
+              setUser(login);
+            }
+
             return;
-          }
-
-          setUser(null);
-          dispatch(
-            getInfo({
-              email: "",
-              login: "",
-              role: "",
-              id: "",
-            })
-          );
-          return;
-        }
-        const responseData = await response.json();
-        if (!responseData.isVerified) {
-          navigate(`/verify?email=${responseData.email}`);
-        }
-        if (responseData && responseData.isVerified) {
-          const login = responseData.login;
-
-          if (login) {
+          } else {
+            setUser(null);
             dispatch(
               getInfo({
-                email: responseData.email,
-                login: responseData.login,
-                role: responseData.role,
-                id: responseData.id,
+                email: "",
+                login: "",
+                role: "",
+                id: "",
               })
             );
-            setUser(responseData);
+            return;
           }
         }
+
+        const { email, isVerified, login, role, id } = await response.json();
+        if (!isVerified && email) {
+          navigate(`/verify?email=${email}`);
+        }
+        if (isVerified) {
+          dispatch(
+            getInfo({
+              email,
+              login,
+              role,
+              id,
+            })
+          );
+          setUser(login);
+        }
       } catch (e) {
-        console.log(e);
+        console.error(e);
       } finally {
         setChecked(true);
       }
     };
     checkUser();
-  }, []);
+  }, [dispatch, navigate]);
 
   if (!checked) return null;
-  return user ? <Outlet /> : <Navigate to="/auth?mode=login" />;
+  return user ? (
+    <main className="h-full bg-[#18191A] w-screen flex flex-row">
+      <Sidebar />
+      <Outlet />
+    </main>
+  ) : (
+    <Navigate to="/auth?mode=login" />
+  );
 }

@@ -101,7 +101,7 @@ app.post("/get-chat-info", tokenMiddleware, async (req, res) => {
 
   const chat = await chatModel
     .findById(chatId)
-    .populate({ path: "messages", options: { limit: 50, sort: { seq: 1 } } })
+    .populate({ path: "messages" })
     .exec();
 
   if (!chat || !chat.membershipIds.includes(userId)) {

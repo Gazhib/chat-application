@@ -57,6 +57,7 @@ export const usePersonalSocket = (id: string, setMessages?: setMessages) => {
     typed: string,
     senderId: string
   ) => {
+    if (!sharedKey) return;
     const { ivBuffer, dataBuffer } = await encryptMessage(typed, sharedKey);
 
     const message = {
@@ -78,7 +79,7 @@ export const usePersonalSocket = (id: string, setMessages?: setMessages) => {
 
   useEffect(() => {
     const handler = async (msg: MessageSchema) => {
-      console.log(msg);
+      if (!sharedKey) return;
       const newMessage = await decryptMessage(sharedKey, {
         iv: msg.cipher.iv,
         data: msg.cipher.data,

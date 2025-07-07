@@ -1,6 +1,5 @@
 import { redirect, useNavigate, useSearchParams } from "react-router";
 import Auth from "../AuthPage/Auth";
-import photo1 from "/photo1.png";
 export default function AuthPage() {
   const [searchParams] = useSearchParams();
   const mode = searchParams.get("mode");

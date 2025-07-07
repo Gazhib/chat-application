@@ -1,6 +1,9 @@
 import { useNavigate } from "react-router";
 import pp from "/pp.png";
 import { useQuery } from "@tanstack/react-query";
+import { useEffect, useRef } from "react";
+import { usePersonalSocket } from "../features/hooks";
+import { useAppSelector } from "../store/hooks";
 
 type User = {
   login: string;
@@ -8,7 +11,11 @@ type User = {
   _id: string;
 };
 
-export default function ChatList() {
+interface ChatList {
+  typed: string;
+}
+
+export default function ChatList({ typed }: ChatList) {
   const { data, isLoading } = useQuery({
     queryKey: ["chats"],
     queryFn: async (): Promise<User[]> => {
@@ -39,15 +46,32 @@ export default function ChatList() {
     navigate(`/chats/${responseData.chatId}`);
   };
 
+  const searchResults = data?.filter((item) =>
+    JSON.stringify(item).toLowerCase().includes(typed.toLowerCase())
+  );
+
+  const lastChange = useRef<number>(null);
+
+  useEffect(() => {
+    if (lastChange.current) {
+      clearTimeout(lastChange.current);
+    }
+
+    lastChange.current = setTimeout(() => {
+      lastChange.current = null;
+    }, 500);
+  }, [typed]);
+  const info = useAppSelector((state) => state.user);
+  const { onlineUsers } = usePersonalSocket(info.id);
   return (
     <ul>
-      {!isLoading && data
-        ? data.map((user) => {
+      {!isLoading && searchResults
+        ? searchResults.map((user) => {
             return (
               <button
                 onClick={() => openChat(user._id)}
                 key={user._id}
-                className="h-[60px] w-full items-center gap-[10px] flex flex-row border-b-[1px] border-[#333333] hover:bg-[#2E2F30] text-white cursor-pointer"
+                className="h-[60px] relative w-full items-center gap-[10px] flex flex-row border-b-[1px] border-[#333333] hover:bg-[#2E2F30] text-white cursor-pointer"
               >
                 <img
                   src={pp}
@@ -59,6 +83,9 @@ export default function ChatList() {
                     {user.lastMessage}
                   </span>
                 </section>
+                {onlineUsers.includes(user._id) && (
+                  <div className="absolute w-[10px] h-[10px] bg-green-600 rounded-full left-[40px] bottom-[5px]" />
+                )}
               </button>
             );
           })

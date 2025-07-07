@@ -16,16 +16,16 @@ export default function MessageBubble({ message, place }: Props) {
         className="rounded-full h-[40px] w-[40px] object-cover self-end"
         src={pp}
       />
-      <div
+      <span
         style={{
           backgroundColor: place === "right" ? "#3A3B3C" : "#2F3136",
           borderBottomLeftRadius: place === "right" ? "16px" : "0px",
           borderBottomRightRadius: place === "right" ? "0px" : "16px",
         }}
-        className="px-[15px] py-[10px] rounded-t-[16px] text-[#E4E6EB] relative flex flex-row"
+        className="px-[15px] py-[10px] rounded-t-[16px] text-[#E4E6EB] relative max-w-[100%] break-words"
       >
-        <span>{message}</span>
-      </div>
+        <span className="">{message}</span>
+      </span>
     </div>
   );
 }

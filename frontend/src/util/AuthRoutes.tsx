@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Navigate, Outlet } from "react-router";
+import { Navigate, Outlet, useNavigate } from "react-router";
 import { useAppDispatch } from "../store/hooks";
 import { getInfo } from "../store/userReducer";
 
@@ -7,6 +7,7 @@ export default function AuthRoutes() {
   const [user, setUser] = useState(null);
   const [checked, setChecked] = useState(false);
   const dispatch = useAppDispatch();
+  const navigate = useNavigate();
   useEffect(() => {
     const checkUser = async () => {
       try {
@@ -14,35 +15,31 @@ export default function AuthRoutes() {
           method: "GET",
           credentials: "include",
         });
-        if (!response.ok) {
-          setUser(null);
+        const { email, isVerified, login, role, id } = await response.json();
+        if (isVerified === false && email) {
+          navigate(`/verify?email=${email}`);
+        }
+        if (isVerified) {
           dispatch(
             getInfo({
-              email: "",
-              login: "",
-              role: "",
-              id: "",
+              email,
+              login,
+              role,
+              id,
             })
           );
-          return;
-        }
-        const responseData = await response.json();
-        if (responseData && responseData.isVerified) {
-          const login = responseData.login;
-
-          if (login) {
-            dispatch(
-              getInfo({
-                email: responseData.email,
-                login: responseData.login,
-                role: responseData.role,
-                id: responseData.id,
-              })
-            );
-            setUser(responseData);
-          }
+          setUser(login);
         }
       } catch (e) {
+        setUser(null);
+        dispatch(
+          getInfo({
+            email: "",
+            login: "",
+            role: "",
+            id: "",
+          })
+        );
         console.log(e);
       } finally {
         setChecked(true);

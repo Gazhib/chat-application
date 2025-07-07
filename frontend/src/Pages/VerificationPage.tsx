@@ -1,5 +1,6 @@
 import {
   Form,
+  redirect,
   useActionData,
   useNavigation,
   useSearchParams,
@@ -45,7 +46,6 @@ export default function VerificationPage() {
       {actionData && actionData.isFail && (
         <span className="text-red-600">{actionData.message}</span>
       )}
-      {actionData && !actionData.isFail && <span>{actionData.message}</span>}
     </Form>
   );
 }
@@ -57,6 +57,7 @@ export async function action({ request }: { request: Request }) {
   const response = await fetch("http://localhost:4000/api/verify-email", {
     method: "POST",
     body: JSON.stringify({ email, verifyCode }),
+    credentials: "include",
     headers: {
       "Content-Type": "application/json",
     },
@@ -65,6 +66,5 @@ export async function action({ request }: { request: Request }) {
   const responseData = await response.json();
 
   if (!response.ok) return { isFail: true, message: responseData };
-
-  return { isFail: false, message: responseData };
+  if (response.ok) return redirect("/chats");
 }

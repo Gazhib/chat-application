@@ -1,15 +1,24 @@
 import { create } from "zustand";
 import { getKeyPair } from "../features/functions";
 
-const useStore = create((set) => ({
-  keyPairs: null,
+interface StoreState {
+  keyPairs?: {
+    privateKey: CryptoKey;
+  };
+  sharedKey?: CryptoKey;
+  getKeyPairs: () => void;
+  changeSharedKey: (key: CryptoKey) => void;
+}
+
+const useStore = create<StoreState>((set) => ({
+  keyPairs: undefined,
   getKeyPairs: async () => {
     const keys = await getKeyPair();
     set({ keyPairs: keys });
   },
-  sharedKey: null,
-  changeSharedKey: async (newSharedKey: CryptoKey) => {
-    set({ sharedKey: newSharedKey });
+  sharedKey: undefined,
+  changeSharedKey: async (key: CryptoKey) => {
+    set({ sharedKey: key });
   },
 }));
 
