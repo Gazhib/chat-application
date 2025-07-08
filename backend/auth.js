@@ -217,8 +217,18 @@ app.get("/api/refresh", async (req, res) => {
 });
 
 app.get("/api/logout", async (req, res) => {
-  res.clearCookie("accessToken");
-  res.clearCookie("refreshToken");
+  res.clearCookie("refreshToken", {
+    httpOnly: true,
+    secure: true,
+    sameSite: "strict",
+    maxAge: 3600000,
+  });
+  res.clearCookie("accessToken", {
+    httpOnly: true,
+    secure: true,
+    sameSite: "strict",
+    maxAge: 3600000,
+  });
   res.status(200).json("Logged out");
 });
 

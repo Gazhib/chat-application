@@ -71,7 +71,7 @@ export default function ChatList({ typed }: ChatList) {
               <button
                 onClick={() => openChat(user._id)}
                 key={user._id}
-                className="h-[60px] relative w-full items-center gap-[10px] flex flex-row border-b-[1px] border-[#333333] hover:bg-[#2E2F30] text-white cursor-pointer"
+                className="h-[60px] px-[10px] relative w-full items-center gap-[10px] flex flex-row border-b-[1px] border-[#333333] hover:bg-[#2E2F30] text-white cursor-pointer"
               >
                 <img
                   src={pp}

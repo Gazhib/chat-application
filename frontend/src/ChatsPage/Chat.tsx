@@ -1,27 +1,52 @@
-import {
-  redirect,
-  useLoaderData,
-  useParams,
-  type LoaderFunctionArgs,
-} from "react-router";
+import { useNavigate, useParams } from "react-router";
 import ChatHeader from "./Chatheader";
 import ChatInput from "./ChatInput";
 import MessageBubble from "./MessageBubble";
 import { useEffect, useState } from "react";
 import { useAppSelector } from "../store/hooks";
 import type { MessageSchema } from "../types";
-import {
-  usePersonalSocket,
-  useSendMessage,
-} from "../features/hooks";
+import { usePersonalSocket, useSendMessage } from "../features/hooks";
 import useStore from "../store/personalZustand";
 import { decryptMessage, getSharedKey } from "../features/functions";
-
+import { useQuery } from "@tanstack/react-query";
+import LoadingSpinner from "../shared/LoadingSpinner";
+type chatResponse = {
+  initialMessages: MessageSchema[];
+  user: {
+    _id: string;
+    login: string;
+  };
+};
 export default function Chat() {
   const { chatId } = useParams();
-  const initialMessages = useLoaderData();
+  const navigate = useNavigate();
+  const {
+    data: { initialMessages, user } = {
+      initialMessages: [],
+      user: { _id: "", login: "" },
+    },
+    isLoading,
+  } = useQuery({
+    queryKey: [chatId],
+    queryFn: async (): Promise<chatResponse> => {
+      const chatResponse = await fetch("http://localhost:3000/get-chat-info", {
+        method: "POST",
+        body: JSON.stringify({ chatId }),
+        headers: {
+          "Content-Type": "application/json",
+        },
+        credentials: "include",
+      });
+      if (!chatResponse.ok) navigate("/auth?mode=login");
 
-  const [messages, setMessages] = useState<MessageSchema[]>([]);
+      const { chat, user } = await chatResponse.json();
+      return { initialMessages: chat.messages, user };
+    },
+  });
+
+  const [messages, setMessages] = useState<MessageSchema[]>(
+    initialMessages || []
+  );
 
   const [typed, setTyped] = useState("");
   const info = useAppSelector((state) => state.user);
@@ -34,6 +59,7 @@ export default function Chat() {
   const changeSharedKey = useStore((state) => state.changeSharedKey);
 
   useEffect(() => {
+    setMessages([]);
     async function decryptMessages() {
       if (initialMessages.length > 0 && sharedKey) {
         const decrypted = await Promise.all(
@@ -77,19 +103,21 @@ export default function Chat() {
 
   return (
     <section className="h-full flex flex-col flex-1 bg-[#1E1F22]">
-      <ChatHeader id={chatId || ""} myId={info.id} />
+      <ChatHeader companionInfo={user} myId={info.id} />
       <main className="h-[calc(100%-110px)] w-[calc(100vw-290px)] flex flex-col justify-end px-[20px] pb-[20px] overflow-y-auto gap-[10px]">
-        {messages
-          ? messages.map((message, index) => {
-              return (
-                <MessageBubble
-                  key={`${message.createdAt}-${message.meta}-${index}`}
-                  message={message.meta}
-                  place={message.senderId !== info.id ? "left" : "right"}
-                />
-              );
-            })
-          : null}
+        {!isLoading && messages ? (
+          messages.map((message, index) => {
+            return (
+              <MessageBubble
+                key={`${message.createdAt}-${message.meta}-${index}`}
+                message={message.meta}
+                place={message.senderId !== info.id ? "left" : "right"}
+              />
+            );
+          })
+        ) : (
+          <LoadingSpinner />
+        )}
       </main>
       <ChatInput
         handleTyped={(value: string) => setTyped(value)}
@@ -98,21 +126,4 @@ export default function Chat() {
       />
     </section>
   );
-}
-
-export async function loader({ params }: LoaderFunctionArgs) {
-  const chatId = params.chatId;
-  const response = await fetch("http://localhost:3000/get-chat-info", {
-    method: "POST",
-    body: JSON.stringify({ chatId }),
-    headers: {
-      "Content-Type": "application/json",
-    },
-    credentials: "include",
-  });
-  if (!response.ok) return redirect("/auth?mode=login");
-
-  const { messages } = await response.json();
-
-  return messages;
 }

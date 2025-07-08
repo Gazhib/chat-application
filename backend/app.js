@@ -96,6 +96,7 @@ app.post("/chats/:chatId", tokenMiddleware, async (req, res) => {
 });
 
 app.post("/get-chat-info", tokenMiddleware, async (req, res) => {
+  console.time("handler");
   const { chatId } = req.body;
   const userId = req.userPayload.sub;
 
@@ -108,30 +109,19 @@ app.post("/get-chat-info", tokenMiddleware, async (req, res) => {
     return res.status(404).json({ message: "Invalid chat" });
   }
 
-  return res.status(200).json(chat);
-});
-
-app.post("/get-companion-info", tokenMiddleware, async (req, res) => {
-  const { chatId, myId } = req.body;
-  const chat = await chatModel.findById(chatId);
-
-  if (!chat || !chat.membershipIds.includes(myId)) {
-    return res.status(404).json({ message: "Invalid chat" });
-  }
-
   const membershipIds = chat.membershipIds;
 
   const companionId = membershipIds.find(
-    (id) => id.toString() !== myId.toString()
+    (id) => id.toString() !== userId.toString()
   );
 
   if (companionId) {
     const user = await userModel
       .findOne({ _id: companionId })
       .select("_id login");
-    return res.status(200).json(user);
+    console.timeEnd("handler");
+    return res.status(200).json({ chat: chat, user: user });
   }
-
   return res.status(400).json("Something went wrong...");
 });
 
