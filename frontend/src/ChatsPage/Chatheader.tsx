@@ -1,40 +1,25 @@
-import { useQuery } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 import { usePersonalSocket } from "../features/hooks";
 
 type Props = {
-  id: string;
+  companionInfo: {
+    _id: string;
+    login: string;
+  };
   myId: string;
 };
 
-export default function ChatHeader({ id, myId }: Props) {
+export default function ChatHeader({ myId, companionInfo }: Props) {
   const [status, setStatus] = useState({
     status: "Offline",
     lastSeen: "Long time ago",
   });
 
-  const { data: info, isLoading } = useQuery({
-    queryKey: [id],
-    queryFn: async () => {
-      const response = await fetch("http://localhost:3000/get-companion-info", {
-        method: "POST",
-        body: JSON.stringify({ chatId: id, myId }),
-        headers: {
-          "Content-Type": "application/json",
-        },
-        credentials: "include",
-      });
-
-      const responseData = await response.json();
-      return responseData;
-    },
-  });
-
   const { onlineUsers } = usePersonalSocket(myId);
 
   useEffect(() => {
-    if (info) {
-      if (onlineUsers.includes(info._id))
+    if (companionInfo) {
+      if (onlineUsers.includes(companionInfo._id))
         setStatus({ status: "Online", lastSeen: "now" });
       else
         setStatus({
@@ -42,12 +27,12 @@ export default function ChatHeader({ id, myId }: Props) {
           lastSeen: "Long time ago",
         });
     }
-  }, [info, onlineUsers, info && info._id]);
+  }, [companionInfo, onlineUsers]);
 
   return (
     <header className="z-1 px-[20px] h-[60px] border-b-[1px] border-[#333333] flex flex-row text-white w-full justify-between items-center bg-[#242526] ">
       <section className="flex flex-col">
-        <span className="text-[16px]">{!isLoading && info && info.login}</span>
+        <span className="text-[16px]">{companionInfo && companionInfo.login}</span>
         <span
           style={{ color: status.status === "Online" ? "#21FF5F" : "#767876" }}
           className="text-[12px]"

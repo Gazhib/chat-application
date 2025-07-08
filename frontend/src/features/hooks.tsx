@@ -3,6 +3,7 @@ import React, { useEffect, useState } from "react";
 import { socket } from "../socket";
 import { decryptMessage, encryptMessage } from "./functions";
 import useStore from "../store/personalZustand";
+import { useNavigate } from "react-router";
 
 export const useSendMessage = async (
   typed: string,
@@ -112,4 +113,24 @@ export const usePersonalSocket = (id: string, setMessages?: setMessages) => {
   }, []);
 
   return { sendMessage, joinRoom, onlineUsers };
+};
+
+export const useBurger = () => {
+  const [isBurger, setIsBurger] = useState(false);
+
+  const navigate = useNavigate();
+
+  const handleLogout = async () => {
+    await fetch("http://localhost:4000/api/logout", {
+      method: "GET",
+      credentials: "include",
+    });
+    navigate("/auth?mode=login");
+  };
+
+  const handleBurger = () => {
+    setIsBurger((prev) => !prev);
+  };
+
+  return { isBurger, handleLogout, handleBurger };
 };
