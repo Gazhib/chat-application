@@ -16,44 +16,47 @@ export async function generateKeyPair() {
   const rawPriv = await crypto.subtle.exportKey("pkcs8", keyPair.privateKey);
   const privateKeyBase64 = Buffer.from(rawPriv).toString("base64");
 
-  const request = window.indexedDB.open("keyPairDb", 1);
+  await new Promise<void>(() => {
+    const request = window.indexedDB.open("keyPairDb", 1);
 
-  let db: IDBDatabase;
-  request.onsuccess = (event) => {
-    const target = event.target as IDBRequest;
-    db = target.result as IDBDatabase;
-    const tx = db.transaction("keyPairs", "readwrite");
-    const store = tx.objectStore("keyPairs");
+    let db: IDBDatabase;
+    request.onsuccess = (event) => {
+      const target = event.target as IDBRequest;
+      db = target.result as IDBDatabase;
+      const tx = db.transaction("keyPairs", "readwrite");
+      const store = tx.objectStore("keyPairs");
 
-    store.put({
-      public: publicKeyBase64,
-      private: privateKeyBase64,
-    });
+      store.put({
+        public: publicKeyBase64,
+        private: privateKeyBase64,
+      });
 
-    tx.oncomplete = () => {
-      console.log("Key pair saved");
-      db.close();
+      tx.oncomplete = () => {
+        console.log("Key pair saved");
+        db.close();
+      };
+
+      tx.onerror = () => {
+        console.error("Error:", tx.error);
+      };
     };
 
-    tx.onerror = () => {
-      console.error("Error:", tx.error);
+    request.onerror = (event) => {
+      const target = event?.target as IDBRequest;
+      console.log(target?.error?.message);
+      console.log("Please allow me to use indexedDb");
     };
-  };
 
-  request.onerror = (event) => {
-    const target = event?.target as IDBRequest;
-    console.log(target?.error?.message);
-    console.log("Please allow me to use indexedDb");
-  };
+    request.onupgradeneeded = (event) => {
+      const target = event?.target as IDBRequest;
+      db = target.result as IDBDatabase;
 
-  request.onupgradeneeded = (event) => {
-    const target = event?.target as IDBRequest;
-    db = target.result as IDBDatabase;
-
-    if (!db.objectStoreNames.contains("keyPairs")) {
-      db.createObjectStore("keyPairs", { keyPath: "public" });
-    }
-  };
+      if (!db.objectStoreNames.contains("keyPairs")) {
+        db.createObjectStore("keyPairs", { keyPath: "public" });
+      }
+    };
+  });
+  return keyPair;
 }
 
 async function importFromBase64(
@@ -180,7 +183,7 @@ export async function getSharedKey(
       name: "AES-GCM",
       length: 256,
     },
-    false,
+    true,
     ["encrypt", "decrypt"]
   );
   return newSharedKey;
@@ -193,13 +196,14 @@ export async function decryptMessage(
   const iv = Buffer.from(message.iv, "base64");
   const data = Buffer.from(message.data, "base64");
 
+
   const ivBuf = iv.buffer.slice(iv.byteOffset, iv.byteOffset + iv.byteLength);
   const dataBuf = data.buffer.slice(
     data.byteOffset,
     data.byteOffset + data.byteLength
   );
   const decrypted = await crypto.subtle.decrypt(
-    { name: "AES-GCM", iv: ivBuf },
+    { name: "AES-GCM", iv: ivBuf, tagLength: 128 },
     sharedKey,
     dataBuf
   );
@@ -211,7 +215,7 @@ export async function encryptMessage(typed: string, sharedKey: CryptoKey) {
   const iv = crypto.getRandomValues(new Uint8Array(12));
   const encodedMessage = new TextEncoder().encode(typed);
   const cipherText = await crypto.subtle.encrypt(
-    { name: "AES-GCM", iv },
+    { name: "AES-GCM", iv, tagLength: 128 },
     sharedKey,
     encodedMessage
   );
@@ -219,5 +223,5 @@ export async function encryptMessage(typed: string, sharedKey: CryptoKey) {
   const dataBuffer = Buffer.from(cipherText).toString("base64");
   const ivBuffer = Buffer.from(iv).toString("base64");
 
-  return { dataBuffer, ivBuffer };
+  return { data: dataBuffer, iv: ivBuffer };
 }

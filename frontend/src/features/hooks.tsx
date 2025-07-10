@@ -13,14 +13,14 @@ export const useSendMessage = async (
 ) => {
   if (typed.trim() === "") return;
 
-  const { ivBuffer, dataBuffer } = await encryptMessage(typed, sharedKey);
+  const { iv, data } = await encryptMessage(typed, sharedKey);
 
   const message = {
     chatId,
     senderId,
     cipher: {
-      iv: ivBuffer,
-      data: dataBuffer,
+      iv,
+      data,
     },
   };
 
@@ -59,14 +59,14 @@ export const usePersonalSocket = (id: string, setMessages?: setMessages) => {
     senderId: string
   ) => {
     if (!sharedKey) return;
-    const { ivBuffer, dataBuffer } = await encryptMessage(typed, sharedKey);
+    const { iv, data } = await encryptMessage(typed, sharedKey);
 
     const message = {
       chatId,
       senderId,
       cipher: {
-        iv: ivBuffer,
-        data: dataBuffer,
+        iv: iv,
+        data: data,
       },
     };
 

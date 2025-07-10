@@ -2,15 +2,11 @@ import { useEffect, useState } from "react";
 import { Navigate, Outlet, useNavigate } from "react-router";
 import { getInfo } from "../store/userReducer";
 import { useAppDispatch } from "../store/hooks";
-import Sidebar from "../shared/Sidebar";
-import { useBurger } from "../features/hooks";
-import ExtendedSidebar from "../shared/ExtendedSidebar";
 
 export default function ProtectedRoutes() {
   const [user, setUser] = useState(null);
   const [checked, setChecked] = useState(false);
   const dispatch = useAppDispatch();
-  const { isBurger, handleLogout, handleBurger } = useBurger();
 
   const navigate = useNavigate();
   useEffect(() => {
@@ -94,17 +90,8 @@ export default function ProtectedRoutes() {
   }, [dispatch, navigate]);
 
   if (!checked) return null;
-
   return user ? (
     <>
-      {isBurger ? (
-        <ExtendedSidebar
-          handleBurger={handleBurger}
-          handleLogout={handleLogout}
-        />
-      ) : (
-        <Sidebar handleBurger={handleBurger} />
-      )}
       <Outlet />
     </>
   ) : (
