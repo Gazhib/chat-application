@@ -1,7 +1,6 @@
 import { useNavigate } from "react-router";
 import pp from "/pp.png";
 import { useQuery } from "@tanstack/react-query";
-import { useEffect, useRef } from "react";
 import { usePersonalSocket } from "../features/hooks";
 import { useAppSelector } from "../store/hooks";
 
@@ -50,17 +49,6 @@ export default function ChatList({ typed }: ChatList) {
     JSON.stringify(item).toLowerCase().includes(typed.toLowerCase())
   );
 
-  const lastChange = useRef<number>(null);
-
-  useEffect(() => {
-    if (lastChange.current) {
-      clearTimeout(lastChange.current);
-    }
-
-    lastChange.current = setTimeout(() => {
-      lastChange.current = null;
-    }, 500);
-  }, [typed]);
   const info = useAppSelector((state) => state.user);
   const { onlineUsers } = usePersonalSocket(info.id);
   return (
@@ -84,7 +72,7 @@ export default function ChatList({ typed }: ChatList) {
                   </span>
                 </section>
                 {onlineUsers.includes(user._id) && (
-                  <div className="absolute w-[10px] h-[10px] bg-green-600 rounded-full left-[40px] bottom-[5px]" />
+                  <div className="absolute w-[10px] h-[10px] bg-green-600 rounded-full left-[45px] bottom-[5px]" />
                 )}
               </button>
             );

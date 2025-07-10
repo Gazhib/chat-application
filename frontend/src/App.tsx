@@ -12,6 +12,7 @@ import RootLayout from "./RootLayout";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Provider } from "react-redux";
 import { store } from "./store/store";
+import CurrentPage from "./util/CurrentPage";
 
 function App() {
   const client = new QueryClient();
@@ -40,12 +41,17 @@ function App() {
           element: <ProtectedRoutes />,
           children: [
             {
-              path: "/chats",
-              element: <ChatsPage />,
+              element: <CurrentPage />,
               children: [
                 {
-                  path: "/chats/:chatId",
-                  element: <Chat />,
+                  path: "/chats",
+                  element: <ChatsPage />,
+                  children: [
+                    {
+                      path: "/chats/:chatId",
+                      element: <Chat />,
+                    },
+                  ],
                 },
               ],
             },

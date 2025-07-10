@@ -36,7 +36,7 @@ const hashPassword = async (password) => {
 };
 
 const createAccessToken = (payload, res) => {
-  const accessToken = jwt.sign(payload, accessSecretKey, { expiresIn: "15m" });
+  const accessToken = jwt.sign(payload, accessSecretKey, { expiresIn: "15h" });
   res.cookie("accessToken", accessToken, {
     httpOnly: true,
     secure: true,

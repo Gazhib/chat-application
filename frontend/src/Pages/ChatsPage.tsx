@@ -13,13 +13,13 @@ export default function ChatsPage() {
 
   useEffect(() => {
     async function genKeyPairs() {
-      await generateKeyPairs();
+      generateKeyPairs();
     }
     genKeyPairs();
   }, [user.id]);
 
   return (
-    <main className="ml-[50px] h-full bg-[#18191A] w-[calc(100%-50px)] flex flex-row">
+    <main className="ml-[50px] h-screen bg-[#18191A] w-[calc(100%-50px)] flex flex-row">
       <ChatSidebar />
       <Outlet />
     </main>

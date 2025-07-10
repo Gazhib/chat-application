@@ -1,5 +1,6 @@
 import { redirect, useNavigate, useSearchParams } from "react-router";
 import Auth from "../AuthPage/Auth";
+import { getKeyPair } from "../features/functions";
 export default function AuthPage() {
   const [searchParams] = useSearchParams();
   const mode = searchParams.get("mode");
@@ -12,7 +13,9 @@ export default function AuthPage() {
     <main className="w-full h-full flex flex-row items-center">
       <Auth mode={mode || ""} />
       <section className="flex-1 bg-black h-full flex items-center justify-center">
-        <span className="text-white text-[16px]">I still do not know what to add here</span>
+        <span className="text-white text-[16px]">
+          I still do not know what to add here
+        </span>
       </section>
     </main>
   );
@@ -42,6 +45,7 @@ export async function action({ request }: { request: Request }) {
     const responseData = await response.json();
 
     if (response.ok) {
+      getKeyPair();
       if (mode === "login") {
         return redirect("/chats");
       }
