@@ -11,7 +11,11 @@ const { default: mongoose } = require("mongoose");
 require("dotenv").config({ path: "../.env" });
 app.use(
   cors({
-    origin: ["http://localhost:5173", "http://localhost:4000"],
+    origin: [
+      "http://localhost:5173",
+      "http://localhost:5174",
+      `${process.env.AUTH_PORT}`,
+    ],
     credentials: true,
   })
 );
@@ -171,6 +175,8 @@ app.get("/me", tokenMiddleware, async (req, res) => {
   res.status(200).json({ id: sub, login, role, email, isVerified });
 });
 
-server.listen(3000, () => {
-  console.log("server started at 3000");
+const port = process.env.DF_PORT;
+
+server.listen(port, () => {
+  console.log(`server started at ${port}`);
 });

@@ -1,18 +1,17 @@
 import { createBrowserRouter, RouterProvider } from "react-router";
 import "./App.css";
-import AuthPage, { action as authAction } from "./Pages/AuthPage";
-import ChatsPage from "./Pages/ChatsPage";
-import AuthRoutes from "./util/AuthRoutes";
-import ProtectedRoutes from "./util/ProtectedRoutes";
-import Chat from "./ChatsPage/Chat";
+import AuthPage, { action as authAction } from "./routes/AuthPage";
+import ChatsPage from "./routes/ChatsPage";
+import AuthRoutes from "./util/ui/AuthRoutes";
+import ProtectedRoutes from "./util/ui/ProtectedRoutes";
+import Chat from "./entities/chat/ui/Chat";
 import VerificationPage, {
   action as verifyAction,
-} from "./Pages/VerificationPage";
+} from "./routes/VerificationPage";
 import RootLayout from "./RootLayout";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { Provider } from "react-redux";
-import { store } from "./store/store";
-import CurrentPage from "./util/CurrentPage";
+import CurrentPage from "./CurrentPage";
+import { ProfileModal } from "./entities/user/ui/ProfileModal";
 
 function App() {
   const client = new QueryClient();
@@ -59,13 +58,27 @@ function App() {
         },
       ],
     },
+    {
+      path: "",
+      element: <ProtectedRoutes />,
+      children: [
+        {
+          element: <CurrentPage />,
+          children: [
+            {
+              path: "/profile/:id",
+              element: <ProfileModal />,
+            },
+          ],
+        },
+      ],
+      handle: { modal: true },
+    },
   ]);
   return (
-    <Provider store={store}>
-      <QueryClientProvider client={client}>
-        <RouterProvider router={router} />{" "}
-      </QueryClientProvider>
-    </Provider>
+    <QueryClientProvider client={client}>
+      <RouterProvider router={router} />{" "}
+    </QueryClientProvider>
   );
 }
 

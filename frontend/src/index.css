@@ -1,7 +1,5 @@
 @import "tailwindcss";
 
-
-
 body {
   width: 100vw;
   height: 100vh;
@@ -17,24 +15,33 @@ html {
   font-family: Poppins;
 }
 
-
-
 ::-webkit-scrollbar {
   width: 10px;
 }
 
-/* Track */
 ::-webkit-scrollbar-track {
-  background: #2A2B2D;
+  background: #2a2b2d;
 }
 
-/* Handle */
 ::-webkit-scrollbar-thumb {
-  background: #3A3B3C;
+  background: #3a3b3c;
   border-radius: 5px;
 }
 
-/* Handle on hover */
 ::-webkit-scrollbar-thumb:hover {
-  background: #4E5F50;
+  background: #4e5f50;
+}
+
+@layer utilities {
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+  .no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+}
+
+dialog::backdrop {
+  background-color: rgba(0, 0, 0, 0.6);
 }
