@@ -11,7 +11,7 @@ export function initSocket(httpServer) {
   const io = new Server(httpServer, {
     path: "/socket.io",
     cors: {
-      origin: ["http://localhost:5173", "http://localhost:3000"],
+      origin: ["http://localhost:5173", `${process.env.DF_PORT}`],
       methods: ["GET", "POST"],
       credentials: true,
     },

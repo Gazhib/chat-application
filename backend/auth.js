@@ -11,7 +11,7 @@ const { transporter } = require("./mailer");
 require("dotenv").config({ path: "../.env" });
 app.use(
   cors({
-    origin: ["http://localhost:5173", "http://localhost:3000"],
+    origin: ["http://localhost:5173","http://localhost:5174", `${process.env.DF_PORT}`],
     credentials: true,
   })
 );
@@ -36,7 +36,7 @@ const hashPassword = async (password) => {
 };
 
 const createAccessToken = (payload, res) => {
-  const accessToken = jwt.sign(payload, accessSecretKey, { expiresIn: "15h" });
+  const accessToken = jwt.sign(payload, accessSecretKey, { expiresIn: "15m" });
   res.cookie("accessToken", accessToken, {
     httpOnly: true,
     secure: true,
@@ -232,6 +232,8 @@ app.get("/api/logout", async (req, res) => {
   res.status(200).json("Logged out");
 });
 
-app.listen(4000, () => {
-  console.log("Auth server started at 4000");
+const port = process.env.AUTH_PORT;
+
+app.listen(port, () => {
+  console.log(`Auth server started at ${port}`);
 });
