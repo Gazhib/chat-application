@@ -11,7 +11,6 @@ import VerificationPage, {
 import RootLayout from "./RootLayout";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import CurrentPage from "./CurrentPage";
-import { ProfileModal } from "./entities/user/ui/ProfileModal";
 
 function App() {
   const client = new QueryClient();
@@ -57,22 +56,6 @@ function App() {
           ],
         },
       ],
-    },
-    {
-      path: "",
-      element: <ProtectedRoutes />,
-      children: [
-        {
-          element: <CurrentPage />,
-          children: [
-            {
-              path: "/profile/:id",
-              element: <ProfileModal />,
-            },
-          ],
-        },
-      ],
-      handle: { modal: true },
     },
   ]);
   return (
