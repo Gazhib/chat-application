@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Navigate, Outlet } from "react-router";
-import { useUserStore } from "../model/store/zustand";
 import { useUser } from "../../entities/user/model/useUser";
+import { useUserStore } from "../../entities/user/model/userZustand";
 
 export default function AuthRoutes() {
   const [checked, setChecked] = useState(false);

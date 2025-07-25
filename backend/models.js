@@ -29,6 +29,14 @@ const userSchema = new Schema({
   publicKey: {
     type: String,
   },
+  description: {
+    type: String,
+    required: false,
+  },
+  profilePicture: {
+    type: String,
+    required: false,
+  },
   verifyCode: String,
   verifyCodeExpires: Date,
 });
@@ -74,7 +82,6 @@ chatSchema.virtual("messages", {
   localField: "_id",
   foreignField: "chatId",
   justOne: false,
-  // options: { sort: { seq: 1 }, limit: 50 },
 });
 
 chatSchema.set("toObject", { virtuals: true });

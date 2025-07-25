@@ -190,8 +190,6 @@ export async function getSharedKey(
   return newSharedKey;
 }
 
-
-
 export async function encryptMessage(typed: string, sharedKey: CryptoKey) {
   const iv = crypto.getRandomValues(new Uint8Array(12));
   const encodedMessage = new TextEncoder().encode(typed);
