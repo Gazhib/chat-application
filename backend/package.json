@@ -1,5 +1,7 @@
 {
   "dependencies": {
+    "@aws-sdk/client-s3": "^3.850.0",
+    "@aws-sdk/s3-request-presigner": "^3.850.0",
     "bcryptjs": "^3.0.2",
     "cookie": "^1.0.2",
     "cookie-parser": "^1.4.7",
@@ -9,6 +11,7 @@
     "express": "^5.1.0",
     "jsonwebtoken": "^9.0.2",
     "mongoose": "^8.16.1",
+    "multer": "^2.0.2",
     "nodemailer": "^7.0.4",
     "nodemon": "^3.1.10",
     "socket.io": "^4.8.1",
@@ -16,10 +19,19 @@
   },
   "scripts": {
     "dev": "nodemon app.js",
-    "devAuth": "nodemon auth.js",
-    "devSocket": "nodemon socket.js"
+    "devAuth": "nodemon auth.js"
   },
   "optionalDependencies": {
     "bufferutil": "^4.0.9"
+  },
+  "devDependencies": {
+    "@types/cookie-parser": "^1.4.9",
+    "@types/express": "^5.0.3",
+    "@types/jsonwebtoken": "^9.0.10",
+    "@types/mongoose": "^5.11.96",
+    "@types/node": "^24.1.0",
+    "@types/nodemailer": "^6.4.17",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.8.3"
   }
 }

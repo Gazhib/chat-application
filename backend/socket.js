@@ -5,6 +5,7 @@ import dotenv from "dotenv";
 
 dotenv.config({ path: "../.env" });
 const accessSecretKey = process.env.ACCESS_SECRET;
+
 export function initSocket(httpServer) {
   const onlineUsers = {};
 
@@ -36,9 +37,11 @@ export function initSocket(httpServer) {
 
     if (!token) return next(new Error("No auth token"));
     try {
-      const user = jwt.verify(token, accessSecretKey);
-      socket.data.user = { id: user.sub, email: user.email };
-      next();
+      if (accessSecretKey) {
+        const user = jwt.verify(token, accessSecretKey);
+        socket.data.user = { id: user.sub, email: user.email };
+        next();
+      }
     } catch (e) {
       next(new Error("Auth error"));
     }
@@ -53,11 +56,19 @@ export function initSocket(httpServer) {
       socket.join(chatId);
     });
 
-    socket.on("chatMessage", ({ chatId, cipher, senderId }) => {
+    socket.on("chatMessage", ({ chatId, cipher, senderId, _id, createdAt }) => {
       io.to(chatId).emit("chatMessage", {
         chatId,
         cipher,
         senderId,
+        _id,
+        createdAt,
+      });
+    });
+
+    socket.on("deleteMessage", ({ messageId, chatId }) => {
+      io.to(chatId).emit("deleteMessage", {
+        messageId,
       });
     });
 

@@ -13,4 +13,5 @@ export type MessageSchema = {
     data: string;
   };
   meta: string;
+  _id: string;
 };

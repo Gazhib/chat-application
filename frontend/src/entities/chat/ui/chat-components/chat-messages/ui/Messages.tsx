@@ -7,9 +7,15 @@ interface Messages {
   isLoading: boolean;
   messages: MessageSchema[];
   myId?: string;
+  companion: { _id: string; login: string };
 }
 
-export default function Messages({ isLoading, messages, myId = "" }: Messages) {
+export default function Messages({
+  isLoading,
+  messages,
+  myId = "",
+  companion,
+}: Messages) {
   const bottomRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -25,9 +31,11 @@ export default function Messages({ isLoading, messages, myId = "" }: Messages) {
           if (!message) return;
           return (
             <MessageBubble
+              messageId={message._id}
               key={`${message.createdAt}-${message.meta}-${index}`}
-              message={message.meta}
+              message={message}
               place={message.senderId !== myId ? "left" : "right"}
+              companionLogin={companion.login}
             />
           );
         })

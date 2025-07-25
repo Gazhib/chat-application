@@ -2,17 +2,27 @@ import { useEffect, useState } from "react";
 import { port } from "../../../util/ui/ProtectedRoutes";
 import { encryptMessage, getSharedKey } from "./encryption";
 import { useNavigate } from "react-router";
-import { useKeyStore, useUserStore } from "../../../util/model/store/zustand";
+import { useKeyStore } from "../../../util/model/store/zustand";
 import type { MessageSchema } from "../ui/chat-components/message-bubble/model/types";
 import { useQuery } from "@tanstack/react-query";
 import { decryptMessage } from "./decryption";
-import { usePersonalSocket } from "../../../util/model/socket/usePersonalSocket";
+import { socket } from "../../../util/model/socket/socket";
+import { useMessageStore } from "./messageZustand";
+import { useUserStore } from "../../user/model/userZustand";
 
 type sendMessageSchema = {
   typed: string;
   chatId: string;
   senderId: string;
   sharedKey?: CryptoKey;
+};
+
+export type newMessageSchema = {
+  message: {
+    chatId: string;
+    senderId: string;
+    cipher: { iv: string; data: string };
+  };
 };
 
 type chatData = {
@@ -28,7 +38,8 @@ interface hookScheme {
 }
 
 export const useMessages = ({ chatId }: hookScheme) => {
-  const [messages, setMessages] = useState<MessageSchema[]>([]);
+  const messages = useMessageStore((state) => state.messages);
+  const setMessages = useMessageStore((state) => state.setMessages);
 
   const user = useUserStore((state) => state.user);
   const keyPairs = useKeyStore((state) => state?.keyPairs);
@@ -37,7 +48,6 @@ export const useMessages = ({ chatId }: hookScheme) => {
 
   const navigate = useNavigate();
 
-  
   const {
     data: { initialMessages, user: companion } = {
       initialMessages: [],
@@ -76,7 +86,6 @@ export const useMessages = ({ chatId }: hookScheme) => {
         changeSharedKey(newSharedKey);
         setSharedKey(newSharedKey);
         async function decryptMessages() {
-          console.log(companion.login);
           if (initialMessages.length > 0 && newSharedKey) {
             const decrypted = await Promise.all(
               initialMessages.map(async (message: MessageSchema) => {
@@ -100,23 +109,45 @@ export const useMessages = ({ chatId }: hookScheme) => {
     handle();
   }, [chatId, user, keyPairs, initialMessages && initialMessages.length]);
 
-  const handleMessage = (newMessage: MessageSchema) => {
-    setMessages((prev) => [...prev, newMessage]);
-  };
+  useEffect(() => {
+    const handler = async (msg: MessageSchema) => {
+      if (!sharedKey) return;
 
-  const { sendMessage: socketSendMessage } = usePersonalSocket({
-    id: user?.id ?? "",
-    handleMessage,
+      const newMessage = await decryptMessage(sharedKey, {
+        iv: msg.cipher.iv,
+        data: msg.cipher.data,
+      });
+      msg.meta = newMessage;
+      handleMessage(msg);
+    };
+
+    socket.on("chatMessage", handler);
+
+    const handleDeleting = async ({ messageId }: { messageId: string }) => {
+      const updatedMessages = messages
+        .filter((msg): msg is MessageSchema => msg !== undefined)
+        .filter((msg): msg is MessageSchema => messageId !== msg._id);
+      setMessages(updatedMessages);
+    };
+
+    socket.on("deleteMessage", handleDeleting);
+
+    return () => {
+      socket.off("chatMessage", handler);
+      socket.off("deleteMessage", handleDeleting);
+    };
   });
+
+  const handleMessage = (newMessage: MessageSchema) => {
+    setMessages([...messages, newMessage]);
+  };
 
   const sendMessage = async ({
     typed,
     chatId,
     senderId,
-    sharedKey,
   }: sendMessageSchema) => {
     if (typed.trim() === "" || !sharedKey) return;
-
     const { iv, data } = await encryptMessage(typed, sharedKey);
 
     const message = {
@@ -140,8 +171,11 @@ export const useMessages = ({ chatId }: hookScheme) => {
       console.log("something went wrong");
       return;
     }
-    socketSendMessage(chatId || "", typed, user?.id ?? "");
+
+    const newMessage = await response.json();
+    socket.emit("chatMessage", newMessage);
   };
+
 
   return {
     sendMessage,

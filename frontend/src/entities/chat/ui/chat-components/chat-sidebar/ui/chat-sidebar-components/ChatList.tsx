@@ -3,7 +3,7 @@ import pp from "/pp.png";
 import { useQuery } from "@tanstack/react-query";
 import { usePersonalSocket } from "../../../../../../../util/model/socket/usePersonalSocket";
 import { port } from "../../../../../../../util/ui/ProtectedRoutes";
-import { useUserStore } from "../../../../../../../util/model/store/zustand";
+import { useUserStore } from "../../../../../../user/model/userZustand";
 
 type User = {
   login: string;
@@ -51,7 +51,7 @@ export default function ChatList({ typed }: ChatList) {
   );
 
   const info = useUserStore((state) => state.user);
-  const { onlineUsers } = usePersonalSocket(info?.id ?? "");
+  const { onlineUsers } = usePersonalSocket({ id: info?.id ?? "" });
   return (
     <ul>
       {!isLoading && searchResults

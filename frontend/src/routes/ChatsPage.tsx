@@ -1,12 +1,13 @@
 import { Outlet } from "react-router";
 import ChatSidebar from "../entities/chat/ui/chat-components/chat-sidebar/ui/ChatSidebar";
 import { usePersonalSocket } from "../util/model/socket/usePersonalSocket";
-import { useKeyStore, useUserStore } from "../util/model/store/zustand";
+import { useKeyStore } from "../util/model/store/zustand";
 import { useEffect } from "react";
+import { useUserStore } from "../entities/user/model/userZustand";
 
 export default function ChatsPage() {
   const user = useUserStore((state) => state.user);
-  const personalSocket = usePersonalSocket(user?.id ?? "");
+  const personalSocket = usePersonalSocket({ id: user?.id ?? "" });
 
   const generateKeyPairs = useKeyStore((state) => state?.getKeyPairs);
 

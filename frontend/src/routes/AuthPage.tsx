@@ -11,9 +11,9 @@ export default function AuthPage() {
   if (!isLogin && !isRegistration) navigate("/auth?mode=login");
 
   return (
-    <main className="w-full h-full flex flex-row items-center">
+    <main className="w-full h-full flex lg:flex-row items-center flex-col">
       <Auth mode={mode || ""} />
-      <section className="flex-1 bg-black h-full flex items-center justify-center">
+      <section className="flex-1 bg-black h-full lg:flex items-center justify-center hidden ">
         <span className="text-white text-[16px]">
           I still do not know what to add here
         </span>

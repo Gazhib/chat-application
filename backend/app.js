@@ -3,12 +3,33 @@ const cors = require("cors");
 const cookieParser = require("cookie-parser");
 const jwt = require("jsonwebtoken");
 const app = express();
-const bcrypt = require("bcryptjs");
+
+const multer = require("multer");
 const http = require("http");
 const { initSocket } = require("./socket");
 const { messageModel, chatModel, userModel } = require("./models");
 const { default: mongoose } = require("mongoose");
+const {
+  S3Client,
+  PutObjectCommand,
+  GetObjectCommand,
+} = require("@aws-sdk/client-s3");
 require("dotenv").config({ path: "../.env" });
+const { getSignedUrl } = require("@aws-sdk/s3-request-presigner");
+
+const BUCKET_NAME = process.env.BUCKET_NAME;
+const BUCKET_REGION = process.env.BUCKET_REGION;
+const BUCKET_ACCESS_KEY = process.env.BUCKET_ACCESS_KEY;
+const BUCKET_SECRET_ACCESS_KEY = process.env.BUCKET_SECRET_ACCESS_KEY;
+
+const s3 = new S3Client({
+  credentials: {
+    accessKeyId: BUCKET_ACCESS_KEY,
+    secretAccessKey: BUCKET_SECRET_ACCESS_KEY,
+  },
+  region: BUCKET_REGION,
+});
+
 app.use(
   cors({
     origin: [
@@ -23,7 +44,6 @@ app.use(cookieParser());
 app.use(express.json());
 
 const accessSecretKey = process.env.ACCESS_SECRET;
-const refreshSecretKey = process.env.REFRESH_SECRET;
 const db = process.env.DB_CONNECTION;
 
 const connectDb = async () => {
@@ -32,6 +52,9 @@ const connectDb = async () => {
 };
 
 connectDb();
+
+const storage = multer.memoryStorage();
+const upload = multer({ storage });
 
 const tokenMiddleware = (req, res, next) => {
   const token = req.cookies.accessToken;
@@ -62,11 +85,11 @@ app.post("/send-message", tokenMiddleware, async (req, res) => {
 
   newMessage.save();
 
-  res.status(200).json({ chatId, senderId, cipher });
+  res.status(200).json(newMessage);
 });
 
 app.get("/get-users", tokenMiddleware, async (req, res) => {
-  const myId = req.userPayload.sub;
+  const myId = req.userPayload?.sub;
   const users = await userModel
     .find({ _id: { $ne: myId } })
     .select("_id login");
@@ -75,7 +98,7 @@ app.get("/get-users", tokenMiddleware, async (req, res) => {
 });
 
 app.post("/chats/:chatId", tokenMiddleware, async (req, res) => {
-  const myId = req.userPayload.sub;
+  const myId = req.userPayload?.sub;
   const otherId = req.params.chatId;
 
   let chat = await chatModel.findOne({
@@ -100,30 +123,27 @@ app.post("/chats/:chatId", tokenMiddleware, async (req, res) => {
 });
 
 app.post("/get-chat-info", tokenMiddleware, async (req, res) => {
-  console.time("handler");
   const { chatId } = req.body;
-  const userId = req.userPayload.sub;
+  const userId = req.userPayload?.sub;
 
   const chat = await chatModel
     .findById(chatId)
     .populate({ path: "messages" })
     .exec();
-
-  if (!chat || !chat.membershipIds.includes(userId)) {
+  if (!chat || (userId && !chat.membershipIds.includes(userId))) {
     return res.status(404).json({ message: "Invalid chat" });
   }
 
   const membershipIds = chat.membershipIds;
 
   const companionId = membershipIds.find(
-    (id) => id.toString() !== userId.toString()
+    (id) => id.toString() !== userId?.toString()
   );
 
   if (companionId) {
     const user = await userModel
       .findOne({ _id: companionId })
       .select("_id login");
-    console.timeEnd("handler");
     return res.status(200).json({ chat: chat, user: user });
   }
   return res.status(400).json("Something went wrong...");
@@ -131,7 +151,7 @@ app.post("/get-chat-info", tokenMiddleware, async (req, res) => {
 
 app.post("/public-key", tokenMiddleware, async (req, res) => {
   const { publicKey } = req.body;
-  const userId = req.userPayload.sub;
+  const userId = req.userPayload?.sub;
 
   const user = await userModel.findById(userId);
   if (!user) {
@@ -167,8 +187,97 @@ app.post("/peer-public-key", tokenMiddleware, async (req, res) => {
   return res.status(200).json({ publicKey: user.publicKey });
 });
 
+app.post("/delete-message", async (req, res) => {
+  const { messageId } = req.body;
+  const message = await messageModel.findByIdAndDelete(messageId);
+  console.log(message);
+  if (!message) {
+    return res.status(400).json("Could not find deleted message");
+  }
+
+  return res.status(200).json("Successfully deleted message");
+});
+
+app.post("/get-user-description", async (req, res) => {
+  const { userId } = req.body;
+  const user = await userModel.findById(userId).select("description");
+  if (!user) {
+    return res.status(400).json("Could not find user");
+  }
+  return res.status(200).json({ description: user.description });
+});
+
+app.post("/change-user-description", async (req, res) => {
+  const { userId, description } = req.body;
+  const user = await userModel.findById(userId);
+  if (!user) {
+    return res.status(400).json("Could not find user");
+  }
+
+  user.description = description;
+  await user.save();
+
+  return res.status(200).json("Description changed successfully");
+});
+
+const randomImageName = () => {
+  return crypto.randomUUID().toString();
+};
+
+app.post(
+  "/update-profile-picture",
+  upload.single("image"),
+  async (req, res) => {
+    const { userId } = req.body;
+    const file = req.file.buffer;
+    const imageName = randomImageName();
+    const params = {
+      Bucket: BUCKET_NAME,
+      Key: imageName,
+      Body: file,
+      ContentType: req.file.mimetype,
+    };
+
+    const putObjectCommand = new PutObjectCommand(params);
+
+    const user = await userModel.findById(userId);
+
+    if (!user) {
+      return res.status(400).json("Something went wrong");
+    }
+
+    await s3.send(putObjectCommand);
+
+    user.profilePicture = imageName;
+    await user.save();
+    return res.status(200).json("Succesfully updated the picture");
+  }
+);
+
+app.post("/get-profile-picture", async (req, res) => {
+  const { userId } = req.body;
+
+  const user = await userModel.findById(userId);
+
+  if (!user) {
+    return res.status(400).json("Something went wrong");
+  }
+
+  if (!user.profilePicture) {
+    return res.status(201).json("Empty");
+  }
+
+  const getObjectParams = {
+    Bucket: BUCKET_NAME,
+    Key: user.profilePicture,
+  };
+  const command = new GetObjectCommand(getObjectParams);
+  const url = await getSignedUrl(s3, command, { expiresIn: 3600 });
+  return res.status(200).json(url);
+});
+
 app.get("/me", tokenMiddleware, async (req, res) => {
-  const { login, role, email, isVerified, sub } = req.userPayload;
+  const { login, role, email, isVerified, sub } = req.userPayload || {};
   if (!req.userPayload || !login || !role) {
     res.status(401).json("Unauthorized");
   }

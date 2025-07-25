@@ -1,8 +1,10 @@
 import { useNavigate } from "react-router";
-import { useUserStore } from "../../../util/model/store/zustand";
+import { useUserStore } from "./userZustand";
 import { authPort, port } from "../../../util/ui/ProtectedRoutes";
+import { useEffect, useState } from "react";
 
 export const useUser = () => {
+  const user = useUserStore((state) => state.user);
   const setUser = useUserStore((state) => state.setUser);
   const navigate = useNavigate();
   const checkUser = async () => {
@@ -52,5 +54,54 @@ export const useUser = () => {
     return true;
   };
 
-  return { checkUser };
+  const [userDescription, setUserDescription] = useState("");
+  const [isChangingDescription, setIsChangingDescription] = useState(false);
+  const [typed, setTyped] = useState("");
+  useEffect(() => {
+    const getUserDescription = async () => {
+      if (!user) return;
+      const response = await fetch(`${port}/get-user-description`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ userId: user.id }),
+      });
+
+      const { description } = await response.json();
+      setUserDescription(description);
+    };
+    getUserDescription();
+  }, [user]);
+
+  const handleChangeDescription = async () => {
+    const response = await fetch(`${port}/change-user-description`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ userId: user?.id, description: typed }),
+    });
+
+    if (!response.ok) {
+      console.error("Failed to change description");
+      return;
+    }
+    setUserDescription(typed);
+    setIsChangingDescription(false);
+  };
+
+  const handleTyping = (value: string) => {
+    setTyped(value);
+  };
+
+  return {
+    checkUser,
+    handleChangeDescription,
+    userDescription,
+    isChangingDescription,
+    setIsChangingDescription,
+    handleTyping,
+    user,
+  };
 };
