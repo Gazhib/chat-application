@@ -24,4 +24,4 @@ export const Sidebar = forwardRef<HTMLDivElement, Sidebar>(
   }
 );
 
-export const AnimatedSidebar = motion(Sidebar);
+export const AnimatedSidebar = motion.create(Sidebar);

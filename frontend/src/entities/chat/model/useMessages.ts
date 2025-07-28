@@ -30,6 +30,7 @@ type chatData = {
   user: {
     _id: string;
     login: string;
+    profilePicture: string;
   };
 };
 
@@ -51,7 +52,7 @@ export const useMessages = ({ chatId }: hookScheme) => {
   const {
     data: { initialMessages, user: companion } = {
       initialMessages: [],
-      user: { _id: "", login: "" },
+      user: { _id: "", login: "", profilePicture: "" },
     },
     isLoading,
   } = useQuery({
@@ -173,9 +174,9 @@ export const useMessages = ({ chatId }: hookScheme) => {
     }
 
     const newMessage = await response.json();
+    console.log("here");
     socket.emit("chatMessage", newMessage);
   };
-
 
   return {
     sendMessage,

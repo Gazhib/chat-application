@@ -5,6 +5,7 @@ export type userInfo = {
   login: string;
   role: string;
   id: string;
+  profilePicture?: string;
 };
 
 interface userStoreState {
