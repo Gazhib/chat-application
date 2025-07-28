@@ -9,6 +9,7 @@ type User = {
   login: string;
   lastMessage: string;
   _id: string;
+  profilePicture: string;
 };
 
 interface ChatList {
@@ -63,7 +64,7 @@ export default function ChatList({ typed }: ChatList) {
                 className="h-[60px] px-[10px] relative w-full items-center gap-[10px] flex flex-row border-b-[1px] border-[#333333] hover:bg-[#2E2F30] text-white cursor-pointer"
               >
                 <img
-                  src={pp}
+                  src={user.profilePicture ? user.profilePicture : pp}
                   className="w-[50px] h-[50px] object-cover rounded-full"
                 />
                 <section className="flex flex-col justify-center">

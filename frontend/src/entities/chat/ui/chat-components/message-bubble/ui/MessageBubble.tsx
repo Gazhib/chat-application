@@ -1,3 +1,4 @@
+import { useUserStore } from "../../../../../user/model/userZustand";
 import type { MessageSchema } from "../model/types";
 import { useContextMenu } from "./context-menu/model/useContextMenu";
 import ContextMenu from "./context-menu/ui/ContextMenu";
@@ -6,17 +7,20 @@ type Props = {
   message: MessageSchema;
   place: string;
   messageId: string;
-  companionLogin: string;
+  companion: {
+    login: string;
+    profilePicture: string;
+  };
 };
 export default function MessageBubble({
   message,
   place,
   messageId,
-  companionLogin,
+  companion,
 }: Props) {
   const { isContextMenu, handleClick } = useContextMenu({ messageId });
   const time = new Date(message.createdAt).toLocaleTimeString().slice(0, 5);
-
+  const user = useUserStore((state) => state.user);
   const isMe = place === "right";
 
   return (
@@ -27,7 +31,13 @@ export default function MessageBubble({
     >
       <img
         className="rounded-full h-[40px] w-[40px] object-cover self-end"
-        src={pp}
+        src={
+          isMe
+            ? user?.profilePicture === "Empty"
+              ? pp
+              : user?.profilePicture
+            : companion.profilePicture ?? pp
+        }
       />
       <section
         onContextMenu={(e) => {
@@ -41,7 +51,7 @@ export default function MessageBubble({
         }`}
       >
         {!isMe && (
-          <div className="text-blue-600 text-[12px]">{companionLogin}</div>
+          <div className="text-blue-600 text-[12px]">{companion.login}</div>
         )}
         <div className={`flex flex-row gap-[10px] max-w-[100%] relative `}>
           <span className="break-all">{message.meta}</span>

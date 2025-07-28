@@ -1,8 +1,7 @@
-import { useQuery } from "@tanstack/react-query";
 import { motion, type MotionProps } from "framer-motion";
 import { forwardRef, useEffect, useRef } from "react";
-import { port } from "../../../util/ui/ProtectedRoutes";
 import pp from "/pp.png";
+import { useUserStore } from "../../../entities/user/model/userZustand";
 interface ExtendedSidebar extends MotionProps {
   handleLogout: () => void;
   handleExtension: () => void;
@@ -23,32 +22,9 @@ function mergeRefs<T = any>(
 }
 
 export const ExtendedSidebar = forwardRef<HTMLDivElement, ExtendedSidebar>(
-  (
-    {
-      handleExtension,
-      handleLogout,
-      handleOpenModal,
-      ...rest
-    },
-    ref
-  ) => {
+  ({ handleExtension, handleLogout, handleOpenModal, ...rest }, ref) => {
     const clickRef = useRef<HTMLDivElement | null>(null);
-    const { data: me, isLoading } = useQuery({
-      queryKey: ["me"],
-      queryFn: async () => {
-        const response = await fetch(`${port}/me`, {
-          method: "GET",
-          credentials: "include",
-        });
-
-        if (!response.ok) {
-          throw new Error("Unauthenticated");
-        }
-        const { login, id } = await response.json();
-
-        return { login, id };
-      },
-    });
+    const user = useUserStore((state) => state.user);
 
     useEffect(() => {
       const handleClick = (event: MouseEvent) => {
@@ -81,10 +57,10 @@ export const ExtendedSidebar = forwardRef<HTMLDivElement, ExtendedSidebar>(
         >
           <img
             className="rounded-full w-[50px] h-[50px] object-cover"
-            src={pp}
+            src={user?.profilePicture === "Empty" ? pp : user?.profilePicture}
           />
           <div className="absolute w-[10px] h-[10px] bg-green-600 rounded-full left-[55px] bottom-[5px]" />
-          <span className="text-[18px]">{!isLoading && me?.login}</span>
+          <span className="text-[18px]">{user?.login}</span>
         </div>
 
         <div
@@ -99,4 +75,4 @@ export const ExtendedSidebar = forwardRef<HTMLDivElement, ExtendedSidebar>(
   }
 );
 
-export const AnimatedExtendedSidebar = motion(ExtendedSidebar);
+export const AnimatedExtendedSidebar = motion.create(ExtendedSidebar);

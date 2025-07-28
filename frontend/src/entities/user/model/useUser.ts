@@ -72,6 +72,22 @@ export const useUser = () => {
       setUserDescription(description);
     };
     getUserDescription();
+
+    const getProfilePicture = async () => {
+      if (!user || user.profilePicture) return;
+      const response = await fetch(`${port}/get-profile-picture`, {
+        method: "POST",
+        body: JSON.stringify({ userId: user?.id }),
+        headers: {
+          "Content-Type": "application/json",
+        },
+        credentials: "include",
+      });
+
+      const picture: string = await response.json();
+      user && setUser({ ...user, profilePicture: picture || "" });
+    };
+    getProfilePicture();
   }, [user]);
 
   const handleChangeDescription = async () => {

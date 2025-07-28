@@ -92,7 +92,19 @@ app.get("/get-users", tokenMiddleware, async (req, res) => {
   const myId = req.userPayload?.sub;
   const users = await userModel
     .find({ _id: { $ne: myId } })
-    .select("_id login");
+    .select("_id login profilePicture");
+
+  for (const user of users) {
+    if (user.profilePicture) {
+      const getObjectParams = {
+        Bucket: BUCKET_NAME,
+        Key: user.profilePicture,
+      };
+      const command = new GetObjectCommand(getObjectParams);
+      const url = await getSignedUrl(s3, command, { expiresIn: 3600 });
+      user.profilePicture = url;
+    }
+  }
 
   res.status(200).json(users);
 });
@@ -143,7 +155,16 @@ app.post("/get-chat-info", tokenMiddleware, async (req, res) => {
   if (companionId) {
     const user = await userModel
       .findOne({ _id: companionId })
-      .select("_id login");
+      .select("_id login profilePicture");
+    if (user.profilePicture) {
+      const getObjectParams = {
+        Bucket: BUCKET_NAME,
+        Key: user.profilePicture,
+      };
+      const command = new GetObjectCommand(getObjectParams);
+      const url = await getSignedUrl(s3, command, { expiresIn: 3600 });
+      user.profilePicture = url;
+    }
     return res.status(200).json({ chat: chat, user: user });
   }
   return res.status(400).json("Something went wrong...");
@@ -230,6 +251,7 @@ app.post(
   async (req, res) => {
     const { userId } = req.body;
     const file = req.file.buffer;
+    console.log(file);
     const imageName = randomImageName();
     const params = {
       Bucket: BUCKET_NAME,
@@ -249,8 +271,15 @@ app.post(
     await s3.send(putObjectCommand);
 
     user.profilePicture = imageName;
+
+    const getObjectParams = {
+      Bucket: BUCKET_NAME,
+      Key: user.profilePicture,
+    };
+    const command = new GetObjectCommand(getObjectParams);
+    const url = await getSignedUrl(s3, command, { expiresIn: 3600 });
     await user.save();
-    return res.status(200).json("Succesfully updated the picture");
+    return res.status(200).json({ profilePicture: url });
   }
 );
 

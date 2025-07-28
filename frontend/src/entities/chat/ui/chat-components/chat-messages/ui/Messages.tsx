@@ -7,7 +7,7 @@ interface Messages {
   isLoading: boolean;
   messages: MessageSchema[];
   myId?: string;
-  companion: { _id: string; login: string };
+  companion: { _id: string; login: string; profilePicture: string };
 }
 
 export default function Messages({
@@ -35,7 +35,7 @@ export default function Messages({
               key={`${message.createdAt}-${message.meta}-${index}`}
               message={message}
               place={message.senderId !== myId ? "left" : "right"}
-              companionLogin={companion.login}
+              companion={companion}
             />
           );
         })
