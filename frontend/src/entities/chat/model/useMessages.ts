@@ -8,7 +8,7 @@ import { useQuery } from "@tanstack/react-query";
 import { decryptMessage } from "./decryption";
 import { socket } from "../../../util/model/socket/socket";
 import { useMessageStore } from "./messageZustand";
-import { useUserStore } from "../../user/model/userZustand";
+import { useUserStore, type userInfo } from "../../user/model/userZustand";
 
 type sendMessageSchema = {
   typed: string;
@@ -27,11 +27,7 @@ export type newMessageSchema = {
 
 type chatData = {
   initialMessages: MessageSchema[];
-  user: {
-    _id: string;
-    login: string;
-    profilePicture: string;
-  };
+  companion: userInfo;
 };
 
 interface hookScheme {
@@ -50,9 +46,16 @@ export const useMessages = ({ chatId }: hookScheme) => {
   const navigate = useNavigate();
 
   const {
-    data: { initialMessages, user: companion } = {
+    data: { initialMessages, companion } = {
       initialMessages: [],
-      user: { _id: "", login: "", profilePicture: "" },
+      companion: {
+        id: "",
+        login: "",
+        profilePicture: "",
+        role: "",
+        email: "",
+        description: "",
+      },
     },
     isLoading,
   } = useQuery({
@@ -68,8 +71,8 @@ export const useMessages = ({ chatId }: hookScheme) => {
       });
       if (!chatResponse.ok) navigate("/auth?mode=login");
 
-      const { chat, user } = await chatResponse.json();
-      return { initialMessages: chat.messages, user };
+      const { chat, companion } = await chatResponse.json();
+      return { initialMessages: chat.messages, companion };
     },
     staleTime: Infinity,
   });

@@ -135,6 +135,7 @@ export async function getKeyPair(): Promise<{
         if (result.length === 0) {
           await generateKeyPair();
           const pair = await getKeyPair();
+          console.log(pair);
           await fetchPublicKey(pair.publicKey);
           resolve(pair);
         } else {

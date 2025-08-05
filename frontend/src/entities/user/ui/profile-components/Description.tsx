@@ -1,11 +1,16 @@
 import { useUser } from "../../model/useUser";
 
-export default function Description() {
+export default function Description({
+  userDescription,
+  isMe,
+}: {
+  userDescription: string;
+  isMe: boolean;
+}) {
   const {
     isChangingDescription,
     handleTyping,
     handleChangeDescription,
-    userDescription,
     setIsChangingDescription,
   } = useUser();
   return (
@@ -31,12 +36,14 @@ export default function Description() {
         ) : (
           <>
             <span>{userDescription}</span>
-            <button
-              onClick={() => setIsChangingDescription((prev) => !prev)}
-              className="text-[10px] cursor-pointer hover:text-orange-500"
-            >
-              <i className="bi bi-pencil-square" />
-            </button>
+            {isMe && (
+              <button
+                onClick={() => setIsChangingDescription((prev) => !prev)}
+                className="text-[10px] cursor-pointer hover:text-orange-500"
+              >
+                <i className="bi bi-pencil-square" />
+              </button>
+            )}
           </>
         )}
       </div>

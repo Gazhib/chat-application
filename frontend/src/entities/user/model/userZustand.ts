@@ -6,6 +6,7 @@ export type userInfo = {
   role: string;
   id: string;
   profilePicture?: string;
+  description?: string;
 };
 
 interface userStoreState {

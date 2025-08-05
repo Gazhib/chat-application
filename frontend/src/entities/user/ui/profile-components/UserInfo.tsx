@@ -6,7 +6,13 @@ import { motion } from "framer-motion";
 import CustomCropper from "../../../cropper/ui/CustomCropper";
 import type { Area } from "react-easy-crop";
 import getCroppedImg from "../../../cropper/model/CroppingImage";
-export default function UserInfo({ user }: { user: userInfo | undefined }) {
+export default function UserInfo({
+  user,
+  isMe,
+}: {
+  user: userInfo | undefined;
+  isMe?: boolean;
+}) {
   const setUser = useUserStore((state) => state.setUser);
   const [croppedAreaPixels, setCroppedAreaPixels] = useState<Area>();
 
@@ -19,7 +25,7 @@ export default function UserInfo({ user }: { user: userInfo | undefined }) {
           previewUrl,
           croppedAreaPixels
         );
-        const blob = await fetch(curCroppedImage).then(r => r.blob())
+        const blob = await fetch(curCroppedImage).then((r) => r.blob());
         const newFile = new File([blob], "profile.png", {
           type: "image/png",
         });
@@ -83,7 +89,7 @@ export default function UserInfo({ user }: { user: userInfo | undefined }) {
               src={user?.profilePicture === "Empty" ? pp : user?.profilePicture}
               className="absolute w-[50px] h-[50px] rounded-full object-cover"
             />
-            {isHovering && (
+            {isHovering && isMe && (
               <motion.div
                 key="camera"
                 initial={{ opacity: 0 }}
