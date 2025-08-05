@@ -94,7 +94,28 @@ app.get("/get-users", tokenMiddleware, async (req, res) => {
     .find({ _id: { $ne: myId } })
     .select("_id login profilePicture");
 
+  const neededUsers = [];
+
   for (const user of users) {
+    neededUsers.push(user);
+    user.id = user._id;
+    delete user._id;
+
+    const chat = await chatModel.findOne({
+      chatType: "DIRECT",
+      membershipIds: { $all: [myId, user.id], $size: 2 },
+    });
+
+    const lastMessage = await chat.populate({
+      path: "messages",
+      options: { sort: { createdAt: -1 }, limit: 1 },
+    });
+    user.lastMessage = lastMessage.messages[lastMessage.messages.length - 1];
+    console.log(lastMessage.messages[lastMessage.messages.length - 1]);
+    if (!chat || lastMessage.messages.length === 0) {
+      neededUsers.pop();
+    }
+
     if (user.profilePicture) {
       const getObjectParams = {
         Bucket: BUCKET_NAME,
@@ -106,7 +127,7 @@ app.get("/get-users", tokenMiddleware, async (req, res) => {
     }
   }
 
-  res.status(200).json(users);
+  res.status(200).json(neededUsers);
 });
 
 app.post("/chats/:chatId", tokenMiddleware, async (req, res) => {
@@ -155,7 +176,7 @@ app.post("/get-chat-info", tokenMiddleware, async (req, res) => {
   if (companionId) {
     const user = await userModel
       .findOne({ _id: companionId })
-      .select("_id login profilePicture");
+      .select("_id login profilePicture email description");
     if (user.profilePicture) {
       const getObjectParams = {
         Bucket: BUCKET_NAME,
@@ -165,8 +186,13 @@ app.post("/get-chat-info", tokenMiddleware, async (req, res) => {
       const url = await getSignedUrl(s3, command, { expiresIn: 3600 });
       user.profilePicture = url;
     }
-    return res.status(200).json({ chat: chat, user: user });
+    user.id = user._id;
+    const companion = { ...user._doc, id: user._id };
+    delete companion._id;
+
+    return res.status(200).json({ chat, companion });
   }
+
   return res.status(400).json("Something went wrong...");
 });
 
@@ -217,15 +243,6 @@ app.post("/delete-message", async (req, res) => {
   }
 
   return res.status(200).json("Successfully deleted message");
-});
-
-app.post("/get-user-description", async (req, res) => {
-  const { userId } = req.body;
-  const user = await userModel.findById(userId).select("description");
-  if (!user) {
-    return res.status(400).json("Could not find user");
-  }
-  return res.status(200).json({ description: user.description });
 });
 
 app.post("/change-user-description", async (req, res) => {
@@ -283,34 +300,21 @@ app.post(
   }
 );
 
-app.post("/get-profile-picture", async (req, res) => {
-  const { userId } = req.body;
-
-  const user = await userModel.findById(userId);
-
-  if (!user) {
-    return res.status(400).json("Something went wrong");
-  }
-
-  if (!user.profilePicture) {
-    return res.status(201).json("Empty");
-  }
-
-  const getObjectParams = {
-    Bucket: BUCKET_NAME,
-    Key: user.profilePicture,
-  };
-  const command = new GetObjectCommand(getObjectParams);
-  const url = await getSignedUrl(s3, command, { expiresIn: 3600 });
-  return res.status(200).json(url);
-});
-
 app.get("/me", tokenMiddleware, async (req, res) => {
-  const { login, role, email, isVerified, sub } = req.userPayload || {};
+  const { login, role, email, isVerified, sub, description, profilePicture } =
+    req.userPayload || {};
   if (!req.userPayload || !login || !role) {
     res.status(401).json("Unauthorized");
   }
-  res.status(200).json({ id: sub, login, role, email, isVerified });
+  res.status(200).json({
+    id: sub,
+    login,
+    role,
+    email,
+    isVerified,
+    description,
+    profilePicture,
+  });
 });
 
 const port = process.env.DF_PORT;

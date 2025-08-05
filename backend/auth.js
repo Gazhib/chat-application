@@ -8,15 +8,35 @@ const nodemailer = require("nodemailer");
 const { userModel } = require("./models");
 const { default: mongoose } = require("mongoose");
 const { transporter } = require("./mailer");
+const { url } = require("inspector");
+const { S3Client, GetObjectCommand } = require("@aws-sdk/client-s3");
+const { getSignedUrl } = require("@aws-sdk/s3-request-presigner");
 require("dotenv").config({ path: "../.env" });
 app.use(
   cors({
-    origin: ["http://localhost:5173","http://localhost:5174", `${process.env.DF_PORT}`],
+    origin: [
+      "http://localhost:5173",
+      "http://localhost:5174",
+      `${process.env.DF_PORT}`,
+    ],
     credentials: true,
   })
 );
 app.use(cookieParser());
 app.use(express.json());
+
+const BUCKET_NAME = process.env.BUCKET_NAME;
+const BUCKET_REGION = process.env.BUCKET_REGION;
+const BUCKET_ACCESS_KEY = process.env.BUCKET_ACCESS_KEY;
+const BUCKET_SECRET_ACCESS_KEY = process.env.BUCKET_SECRET_ACCESS_KEY;
+
+const s3 = new S3Client({
+  credentials: {
+    accessKeyId: BUCKET_ACCESS_KEY,
+    secretAccessKey: BUCKET_SECRET_ACCESS_KEY,
+  },
+  region: BUCKET_REGION,
+});
 
 const accessSecretKey = process.env.ACCESS_SECRET;
 const refreshSecretKey = process.env.REFRESH_SECRET;
@@ -83,11 +103,22 @@ app.post("/api/login", async (req, res) => {
   const isCorrectPassword = await bcrypt.compare(password, hashedPassword);
   if (!isCorrectPassword) return res.status(401).json("Incorrect password");
   const role = "user";
+  if (user.profilePicture) {
+    const getObjectParams = {
+      Bucket: BUCKET_NAME,
+      Key: user.profilePicture,
+    };
+    const command = new GetObjectCommand(getObjectParams);
+    const url = await getSignedUrl(s3, command, { expiresIn: 3600 });
+    user.profilePicture = url;
+  }
   const userPayload = {
     login,
     role,
     email: user.email,
     isVerified: user.isVerified,
+    description: user.description,
+    profilePicture: user.profilePicture,
     sub: user._id.toString(),
   };
 
@@ -179,11 +210,22 @@ app.post("/api/verify-email", async (req, res) => {
   user.verifyCode = undefined;
   user.verifyCodeExpires = undefined;
   await user.save();
+  if (user.profilePicture) {
+    const getObjectParams = {
+      Bucket: BUCKET_NAME,
+      Key: user.profilePicture,
+    };
+    const command = new GetObjectCommand(getObjectParams);
+    const url = await getSignedUrl(s3, command, { expiresIn: 3600 });
+    user.profilePicture = url;
+  }
   const userPayload = {
     login: user.login,
     email,
     sub: user._id,
     role: "USER",
+    description: user.description,
+    profilePicture: user.profilePicture,
     isVerified: true,
   };
 

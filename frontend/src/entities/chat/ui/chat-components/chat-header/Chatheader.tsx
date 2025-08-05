@@ -1,10 +1,8 @@
 import { useEffect, useState } from "react";
 import { usePersonalSocket } from "../../../../../util/model/socket/usePersonalSocket";
+import type { userInfo } from "../../../../user/model/userZustand";
 type Props = {
-  companionInfo: {
-    _id: string;
-    login: string;
-  };
+  companionInfo: userInfo;
   myId: string;
 };
 
@@ -14,11 +12,11 @@ export default function ChatHeader({ myId, companionInfo }: Props) {
     lastSeen: "Long time ago",
   });
 
-  const { onlineUsers } = usePersonalSocket({id: myId});
+  const { onlineUsers } = usePersonalSocket({ id: myId });
 
   useEffect(() => {
     if (companionInfo) {
-      if (onlineUsers.includes(companionInfo._id))
+      if (onlineUsers.includes(companionInfo.id))
         setStatus({ status: "Online", lastSeen: "now" });
       else
         setStatus({
@@ -26,12 +24,12 @@ export default function ChatHeader({ myId, companionInfo }: Props) {
           lastSeen: "Long time ago",
         });
     }
-  }, [companionInfo, onlineUsers, companionInfo && companionInfo._id]);
+  }, [companionInfo, onlineUsers, companionInfo && companionInfo.id]);
 
   return (
     <header className="z-1 px-[20px] h-[60px] border-b-[1px] border-[#333333] flex flex-row text-white w-full justify-between items-center bg-[#242526] ">
       <section className="flex flex-col">
-        <span className="text-[16px]">{companionInfo && companionInfo.login}</span>
+        <span className="text-[16px]">{companionInfo?.login}</span>
         <span
           style={{ color: status.status === "Online" ? "#21FF5F" : "#767876" }}
           className="text-[12px]"
@@ -40,10 +38,10 @@ export default function ChatHeader({ myId, companionInfo }: Props) {
         </span>
       </section>
       <section className="flex flex-row gap-[15px]">
-        <button>
+        <button className="cursor-pointer">
           <i className="bi bi-telephone-fill"></i>
         </button>
-        <button>
+        <button className="cursor-pointer">
           <i className="bi bi-three-dots-vertical"></i>
         </button>
       </section>

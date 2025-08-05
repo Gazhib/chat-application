@@ -4,6 +4,7 @@ import { useSidebar } from "./widget/extended-sidebar/model/useSidebar";
 import { AnimatedExtendedSidebar } from "./widget/extended-sidebar/ui/ExtendedSidebar";
 import { AnimatePresence } from "framer-motion";
 import { ProfileModal } from "./entities/user/ui/ProfileModal";
+import { useUserStore } from "./entities/user/model/userZustand";
 
 export default function CurrentPage() {
   const {
@@ -13,6 +14,7 @@ export default function CurrentPage() {
     modalRef,
     handleOpenModal,
   } = useSidebar();
+  const user = useUserStore((state) => state.user);
   return (
     <>
       <AnimatePresence mode="wait">
@@ -38,7 +40,7 @@ export default function CurrentPage() {
       </AnimatePresence>
       <Sidebar key="sidebar" handleExtension={handleExtension} />
       <Outlet />
-      <ProfileModal ref={modalRef} />
+      <ProfileModal user={user} ref={modalRef} />
     </>
   );
 }

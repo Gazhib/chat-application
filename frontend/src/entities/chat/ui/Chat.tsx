@@ -5,16 +5,20 @@ import { useState } from "react";
 import { useMessages } from "../model/useMessages";
 import Messages from "./chat-components/chat-messages/ui/Messages";
 import { useUserStore } from "../../user/model/userZustand";
+import { ProfileModal } from "../../user/ui/ProfileModal";
+import { useSidebar } from "../../../widget/extended-sidebar/model/useSidebar";
 
 export default function Chat() {
   const { chatId } = useParams();
   const { messages, isLoading, companion, sendMessage } = useMessages({
     chatId: chatId ?? "",
   });
-
+  const { modalRef } = useSidebar();
 
   const [typed, setTyped] = useState("");
   const info = useUserStore((state) => state.user);
+
+  const [currentUserModal, setCurrentUserModal] = useState("me");
 
   const handleSendMessage = () => {
     if (typed === "") return;
@@ -35,12 +39,17 @@ export default function Chat() {
           messages={messages}
           myId={info?.id}
           companion={companion}
+          setCurrentUserModal={setCurrentUserModal}
         />
       </main>
       <ChatInput
         handleTyped={(value: string) => setTyped(value)}
         typed={typed}
         handleSendMessage={handleSendMessage}
+      />
+      <ProfileModal
+        user={currentUserModal === "me" ? info : companion}
+        ref={modalRef}
       />
     </section>
   );

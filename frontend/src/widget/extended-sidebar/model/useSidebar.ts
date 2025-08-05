@@ -2,10 +2,12 @@ import { useRef, useState } from "react";
 import { useNavigate } from "react-router";
 import { authPort } from "../../../util/ui/ProtectedRoutes";
 import type { modalRefScheme } from "../../../entities/user/ui/ProfileModal";
+import { useSidebarStore } from "./sidebarZustand";
 
 export const useSidebar = () => {
   const [isExtended, setIsExtended] = useState(false);
-  const modalRef = useRef<modalRefScheme>(null);
+  const modalRef =
+    useSidebarStore((state) => state.modalRef) || useRef<modalRefScheme>(null);
 
   const navigate = useNavigate();
 

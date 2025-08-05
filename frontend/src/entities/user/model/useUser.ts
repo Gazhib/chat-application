@@ -1,7 +1,7 @@
 import { useNavigate } from "react-router";
 import { useUserStore } from "./userZustand";
 import { authPort, port } from "../../../util/ui/ProtectedRoutes";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 
 export const useUser = () => {
   const user = useUserStore((state) => state.user);
@@ -20,12 +20,20 @@ export const useUser = () => {
           setUser(undefined);
         }
       } else {
-        const { email, isVerified, login, role, id } = await response.json();
+        const {
+          email,
+          isVerified,
+          login,
+          role,
+          id,
+          description,
+          profilePicture,
+        } = await response.json();
         if (isVerified === false && email) {
           navigate(`/verify?email=${email}`);
         }
         if (isVerified) {
-          setUser({ email, login, role, id });
+          setUser({ email, login, role, id, description, profilePicture });
         }
       }
     } catch (e) {
@@ -42,10 +50,17 @@ export const useUser = () => {
       credentials: "include",
     });
     if (refreshResponse.ok) {
-      const { email, isVerified, login, role, id } =
-        await refreshResponse.json();
+      const {
+        email,
+        isVerified,
+        login,
+        role,
+        id,
+        description,
+        profilePicture,
+      } = await refreshResponse.json();
       if (isVerified) {
-        setUser({ email, login, role, id });
+        setUser({ email, login, role, id, description, profilePicture });
       }
     } else {
       setUser(undefined);
@@ -57,38 +72,6 @@ export const useUser = () => {
   const [userDescription, setUserDescription] = useState("");
   const [isChangingDescription, setIsChangingDescription] = useState(false);
   const [typed, setTyped] = useState("");
-  useEffect(() => {
-    const getUserDescription = async () => {
-      if (!user) return;
-      const response = await fetch(`${port}/get-user-description`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ userId: user.id }),
-      });
-
-      const { description } = await response.json();
-      setUserDescription(description);
-    };
-    getUserDescription();
-
-    const getProfilePicture = async () => {
-      if (!user || user.profilePicture) return;
-      const response = await fetch(`${port}/get-profile-picture`, {
-        method: "POST",
-        body: JSON.stringify({ userId: user?.id }),
-        headers: {
-          "Content-Type": "application/json",
-        },
-        credentials: "include",
-      });
-
-      const picture: string = await response.json();
-      user && setUser({ ...user, profilePicture: picture || "" });
-    };
-    getProfilePicture();
-  }, [user]);
 
   const handleChangeDescription = async () => {
     const response = await fetch(`${port}/change-user-description`, {

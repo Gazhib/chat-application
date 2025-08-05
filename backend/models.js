@@ -1,45 +1,6 @@
 const { Schema, default: mongoose } = require("mongoose");
 
-const userSchema = new Schema({
-  email: {
-    type: String,
-    required: true,
-  },
-  login: {
-    type: String,
-    required: true,
-  },
-  createdAt: {
-    type: Date,
-    default: Date.now,
-  },
-  role: {
-    type: String,
-    default: "USER",
-  },
-  password: {
-    type: String,
-    required: true,
-  },
-  isVerified: {
-    type: Boolean,
-    required: true,
-    default: false,
-  },
-  publicKey: {
-    type: String,
-  },
-  description: {
-    type: String,
-    required: false,
-  },
-  profilePicture: {
-    type: String,
-    required: false,
-  },
-  verifyCode: String,
-  verifyCodeExpires: Date,
-});
+
 
 const deviceSchema = new Schema({
   userId: {
@@ -133,6 +94,51 @@ const messageSchema = new Schema({
     iv: String,
     data: String,
   },
+});
+
+const userSchema = new Schema({
+  email: {
+    type: String,
+    required: true,
+  },
+  login: {
+    type: String,
+    required: true,
+  },
+  createdAt: {
+    type: Date,
+    default: Date.now,
+  },
+  role: {
+    type: String,
+    default: "USER",
+  },
+  password: {
+    type: String,
+    required: true,
+  },
+  isVerified: {
+    type: Boolean,
+    required: true,
+    default: false,
+  },
+  publicKey: {
+    type: String,
+  },
+  description: {
+    type: String,
+    required: false,
+  },
+  profilePicture: {
+    type: String,
+    required: false,
+  },
+  lastMessage: {
+    type: messageSchema,
+    required: false,
+  },
+  verifyCode: String,
+  verifyCodeExpires: Date,
 });
 
 const userModel = mongoose.model("user", userSchema);
