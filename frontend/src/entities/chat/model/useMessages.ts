@@ -9,6 +9,7 @@ import { decryptMessage } from "./decryption";
 import { socket } from "../../../util/model/socket/socket";
 import { useMessageStore } from "./messageZustand";
 import { useUserStore, type userInfo } from "../../user/model/userZustand";
+import { usersStore } from "../ui/chat-components/chat-sidebar/model/useChatSidebar";
 
 type sendMessageSchema = {
   typed: string;
@@ -39,6 +40,8 @@ export const useMessages = ({ chatId }: hookScheme) => {
   const setMessages = useMessageStore((state) => state.setMessages);
 
   const user = useUserStore((state) => state.user);
+  const users = usersStore((state) => state.users);
+  const setUsers = usersStore((state) => state.setUsers);
   const keyPairs = useKeyStore((state) => state?.keyPairs);
   const changeSharedKey = useKeyStore((state) => state.changeSharedKey);
   const [sharedKey, setSharedKey] = useState<CryptoKey>();
@@ -122,6 +125,10 @@ export const useMessages = ({ chatId }: hookScheme) => {
         data: msg.cipher.data,
       });
       msg.meta = newMessage;
+      const updatedUsers = users.map((u) =>
+        u.id === companion.id ? { ...u, lastMessage: msg } : u
+      );
+      setUsers(updatedUsers);
       handleMessage(msg);
     };
 
@@ -145,6 +152,10 @@ export const useMessages = ({ chatId }: hookScheme) => {
   const handleMessage = (newMessage: MessageSchema) => {
     setMessages([...messages, newMessage]);
   };
+
+  useEffect(() => {
+    console.log(companion);
+  }, [companion]);
 
   const sendMessage = async ({
     typed,
@@ -177,7 +188,9 @@ export const useMessages = ({ chatId }: hookScheme) => {
     }
 
     const newMessage = await response.json();
-    console.log("here");
+
+    console.log(newMessage);
+
     socket.emit("chatMessage", newMessage);
   };
 
