@@ -5,7 +5,7 @@ import {
   useNavigation,
   useSearchParams,
 } from "react-router";
-import { port } from "../util/ui/ProtectedRoutes";
+import { authPort } from "../util/ui/ProtectedRoutes";
 
 export default function VerificationPage() {
   const [searchParams] = useSearchParams();
@@ -55,7 +55,7 @@ export async function action({ request }: { request: Request }) {
   const fd = await request.formData();
   const email = fd.get("email");
   const verifyCode = fd.get("code");
-  const response = await fetch(`${port}/api/verify-email`, {
+  const response = await fetch(`${authPort}/api/verify-email`, {
     method: "POST",
     body: JSON.stringify({ email, verifyCode }),
     credentials: "include",

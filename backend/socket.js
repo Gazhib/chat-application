@@ -57,6 +57,7 @@ export function initSocket(httpServer) {
     });
 
     socket.on("chatMessage", ({ chatId, cipher, senderId, _id, createdAt }) => {
+      console.log("handling message");
       io.to(chatId).emit("chatMessage", {
         chatId,
         cipher,

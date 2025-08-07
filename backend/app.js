@@ -88,11 +88,12 @@ app.post("/send-message", tokenMiddleware, async (req, res) => {
   res.status(200).json(newMessage);
 });
 
-app.get("/get-users", tokenMiddleware, async (req, res) => {
+app.get("/users", tokenMiddleware, async (req, res) => {
   const myId = req.userPayload?.sub;
   const users = await userModel
     .find({ _id: { $ne: myId } })
-    .select("_id login profilePicture");
+    .select("_id login profilePicture")
+    .lean();
 
   const neededUsers = [];
 
@@ -106,14 +107,20 @@ app.get("/get-users", tokenMiddleware, async (req, res) => {
       membershipIds: { $all: [myId, user.id], $size: 2 },
     });
 
+    if (!chat) {
+      neededUsers.pop();
+      continue;
+    }
+
     const lastMessage = await chat.populate({
       path: "messages",
       options: { sort: { createdAt: -1 }, limit: 1 },
     });
     user.lastMessage = lastMessage.messages[lastMessage.messages.length - 1];
     console.log(lastMessage.messages[lastMessage.messages.length - 1]);
-    if (!chat || lastMessage.messages.length === 0) {
+    if (lastMessage.messages.length === 0) {
       neededUsers.pop();
+      continue;
     }
 
     if (user.profilePicture) {
@@ -128,6 +135,35 @@ app.get("/get-users", tokenMiddleware, async (req, res) => {
   }
 
   res.status(200).json(neededUsers);
+});
+
+app.post("/users/:userName", tokenMiddleware, async (req, res) => {
+  const userName = req.params.userName;
+
+  const users = await userModel
+    .find({
+      login: { $regex: userName, $options: "i" },
+    })
+    .limit(15)
+    .lean()
+    .select("_id login profilePicture");
+
+  for (const user of users) {
+    user.id = user._id;
+    delete user._id;
+
+    if (user.profilePicture) {
+      const getObjectParams = {
+        Bucket: BUCKET_NAME,
+        Key: user.profilePicture,
+      };
+      const command = new GetObjectCommand(getObjectParams);
+      const url = await getSignedUrl(s3, command, { expiresIn: 3600 });
+      user.profilePicture = url;
+    }
+  }
+
+  return res.status(200).json(users);
 });
 
 app.post("/chats/:chatId", tokenMiddleware, async (req, res) => {
