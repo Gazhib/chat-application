@@ -35,7 +35,7 @@ export default function MessageBubble({
 
   return (
     <div
-      className={`max-w-[40%] flex ${
+      className={`max-w-[50%] flex ${
         isMe ? "flex-row-reverse self-end" : "flex-row self-start"
       } gap-[10px] relative`}
     >
