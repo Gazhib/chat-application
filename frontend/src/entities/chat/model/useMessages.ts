@@ -45,6 +45,7 @@ export const useMessages = ({ chatId }: hookScheme) => {
   const keyPairs = useKeyStore((state) => state?.keyPairs);
   const changeSharedKey = useKeyStore((state) => state.changeSharedKey);
   const [sharedKey, setSharedKey] = useState<CryptoKey>();
+  const setCompanionId = useUserStore((state) => state.setCompanionId);
 
   const navigate = useNavigate();
 
@@ -75,6 +76,7 @@ export const useMessages = ({ chatId }: hookScheme) => {
       if (!chatResponse.ok) navigate("/auth?mode=login");
 
       const { chat, companion } = await chatResponse.json();
+      setCompanionId(companion.id);
       return { initialMessages: chat.messages, companion };
     },
     staleTime: Infinity,
@@ -119,7 +121,7 @@ export const useMessages = ({ chatId }: hookScheme) => {
   useEffect(() => {
     const handler = async (msg: MessageSchema) => {
       if (!sharedKey) return;
-
+      console.log(msg);
       const newMessage = await decryptMessage(sharedKey, {
         iv: msg.cipher.iv,
         data: msg.cipher.data,

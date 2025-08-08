@@ -12,11 +12,17 @@ export type userInfo = {
 interface userStoreState {
   user: userInfo | undefined;
   setUser: (user: userInfo | undefined) => void;
+  companionId: string;
+  setCompanionId: (companionId: string) => void;
 }
 
 export const useUserStore = create<userStoreState>((set) => ({
   user: undefined,
   setUser: (user: userInfo | undefined) => {
     set({ user: user });
+  },
+  companionId: "",
+  setCompanionId: (companionId: string) => {
+    set({ companionId: companionId });
   },
 }));

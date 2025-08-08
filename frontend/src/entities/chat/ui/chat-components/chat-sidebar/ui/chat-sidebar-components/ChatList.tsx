@@ -27,8 +27,8 @@ export default function ChatList({ typed, searchResults }: ChatList) {
                   src={curUser.profilePicture ? curUser.profilePicture : pp}
                   className="w-[50px] h-[50px] object-cover rounded-full"
                 />
-                <section className="flex flex-col justify-center">
-                  <span className="text-[16px]">{curUser.login}</span>
+                <section className="flex flex-col truncate">
+                  <span className="text-[16px] self-start">{curUser.login}</span>
                   <span className="text-[12px] text-[#9A9C99] self-start">
                     {curUser?.lastMessage?.meta}
                   </span>
