@@ -30,8 +30,6 @@ export default function UserInfo({
           type: "image/png",
         });
 
-        console.log(curCroppedImage.toString());
-
         const formData = new FormData();
 
         formData.append("image", newFile);

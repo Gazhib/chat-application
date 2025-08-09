@@ -14,4 +14,5 @@ export type MessageSchema = {
   };
   meta: string;
   _id: string;
+  picture?: string;
 };
