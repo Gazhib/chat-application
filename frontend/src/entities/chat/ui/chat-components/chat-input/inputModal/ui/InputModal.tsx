@@ -11,10 +11,14 @@ type InputModalScheme = {
   caption: string;
   handleCaption: (value: string) => void;
   onCloseModal: () => void;
+  handleSendMessage: (previewUrl: string | undefined) => void;
 };
 
 export const InputModal = forwardRef<modalRefScheme, InputModalScheme>(
-  ({ picture, caption, handleCaption, onCloseModal }, ref) => {
+  (
+    { picture, caption, handleCaption, onCloseModal, handleSendMessage },
+    ref
+  ) => {
     const dialogRef = useRef<HTMLDialogElement>(null);
 
     useImperativeHandle(ref, () => ({
@@ -44,7 +48,9 @@ export const InputModal = forwardRef<modalRefScheme, InputModalScheme>(
           </section>
           <footer className="flex flex-row justify-between text-white">
             <CustomButton onClick={onCloseModal}>Close</CustomButton>
-            <CustomButton onClick={() => {}}>Send</CustomButton>
+            <CustomButton onClick={() => handleSendMessage(picture)}>
+              Send
+            </CustomButton>
           </footer>
         </main>
       </dialog>

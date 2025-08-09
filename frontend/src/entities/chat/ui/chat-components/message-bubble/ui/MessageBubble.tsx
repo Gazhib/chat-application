@@ -1,3 +1,4 @@
+import { useRef } from "react";
 import { useSidebar } from "../../../../../../widget/extended-sidebar/model/useSidebar";
 import {
   useUserStore,
@@ -7,6 +8,8 @@ import type { MessageSchema } from "../model/types";
 import { useContextMenu } from "./context-menu/model/useContextMenu";
 import ContextMenu from "./context-menu/ui/ContextMenu";
 import pp from "/pp.png";
+import { PhotoModal } from "./PhotoModal/PhotoModal";
+import type { modalRefScheme } from "../../chat-input/inputModal/ui/InputModal";
 type Props = {
   message: MessageSchema;
   place: string;
@@ -33,9 +36,15 @@ export default function MessageBubble({
     modalRef.current?.openModal();
   };
 
+  const photoModalRef = useRef<modalRefScheme>(null);
+
+  const handleOpenPhoto = () => {
+    photoModalRef.current?.openModal();
+  };
+
   return (
     <div
-      className={`max-w-[50%] flex ${
+      className={`max-w-[65%] flex ${
         isMe ? "flex-row-reverse self-end" : "flex-row self-start"
       } gap-[10px] relative`}
     >
@@ -55,7 +64,7 @@ export default function MessageBubble({
           e.preventDefault();
           if (isMe) handleClick();
         }}
-        className={`px-[15px] py-[10px] rounded-t-[16px] text-[#E4E6EB] relative max-w-[100%] flex ${
+        className={`px-[15px] py-[10px] rounded-t-[16px] text-[#E4E6EB] relative w-fit overflow-hidden items-end flex ${
           isMe
             ? "bg-[#3A3B3C] rounded-bl-[16px]"
             : "bg-[#2F3136] rounded-br-[16px] flex-col"
@@ -69,8 +78,15 @@ export default function MessageBubble({
             {companion.login}
           </div>
         )}
-        <div className={`flex flex-row gap-[10px] max-w-[100%] relative `}>
-          <span className="break-all">{message.meta}</span>
+        <div className={`flex flex-row gap-[10px] items-end relative `}>
+          <section className="flex flex-col">
+            <img
+              onClick={handleOpenPhoto}
+              src={message.picture}
+              className="block w-full max-w-[420px]  h-auto object-cover cursor-pointer"
+            />
+            <span className="break-all">{message.meta}</span>
+          </section>
 
           <span className="text-[10px] text-gray-500 self-end bottom-[-10px]">
             {time}
@@ -80,6 +96,7 @@ export default function MessageBubble({
       {isContextMenu && (
         <ContextMenu handleClickAway={handleClick} message={message} />
       )}
+      <PhotoModal picture={message.picture} ref={photoModalRef} />
     </div>
   );
 }

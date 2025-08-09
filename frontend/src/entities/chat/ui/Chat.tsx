@@ -20,12 +20,13 @@ export default function Chat() {
 
   const [currentUserModal, setCurrentUserModal] = useState("me");
 
-  const handleSendMessage = () => {
-    if (typed === "") return;
+  const handleSendMessage = (previewUrl: string | undefined) => {
+    if (typed === "" && previewUrl === undefined) return;
     sendMessage({
       typed,
       chatId: chatId || "",
       senderId: info?.id ?? "",
+      picture: previewUrl,
     });
     setTyped("");
   };

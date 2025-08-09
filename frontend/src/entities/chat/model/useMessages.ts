@@ -16,6 +16,7 @@ type sendMessageSchema = {
   chatId: string;
   senderId: string;
   sharedKey?: CryptoKey;
+  picture: string | undefined;
 };
 
 export type newMessageSchema = {
@@ -163,8 +164,19 @@ export const useMessages = ({ chatId }: hookScheme) => {
     typed,
     chatId,
     senderId,
+    picture,
   }: sendMessageSchema) => {
-    if (typed.trim() === "" || !sharedKey) return;
+    if ((typed.trim() === "" && picture === undefined) || !sharedKey) return;
+    const formData = new FormData();
+    if (picture) {
+      const blob = await fetch(picture).then((r) => r.blob());
+      const newFile = new File([blob], "profile.png", {
+        type: "image/png",
+      });
+
+      formData.append("image", newFile);
+    }
+
     const { iv, data } = await encryptMessage(typed, sharedKey);
 
     const message = {
@@ -174,15 +186,15 @@ export const useMessages = ({ chatId }: hookScheme) => {
         iv,
         data,
       },
+      picture,
     };
+
+    formData.append("message", JSON.stringify(message));
 
     const response = await fetch(`${port}/send-message`, {
       method: "POST",
-      body: JSON.stringify(message),
+      body: formData,
       credentials: "include",
-      headers: {
-        "Content-Type": "application/json",
-      },
     });
     if (!response.ok) {
       console.log("something went wrong");

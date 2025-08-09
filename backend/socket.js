@@ -6,13 +6,15 @@ import dotenv from "dotenv";
 dotenv.config({ path: "../.env" });
 const accessSecretKey = process.env.ACCESS_SECRET;
 
+const port = process.env.DF_PORT;
+
 export function initSocket(httpServer) {
   const onlineUsers = {};
 
   const io = new Server(httpServer, {
     path: "/socket.io",
     cors: {
-      origin: ["http://localhost:5173", `${process.env.DF_PORT}`],
+      origin: ["http://localhost:5173", `http://localhost:${port}`],
       methods: ["GET", "POST"],
       credentials: true,
     },
@@ -52,20 +54,32 @@ export function initSocket(httpServer) {
     onlineUsers[userId] = socket.id;
     io.emit("onlineList", { onlineUsersIds: Object.keys(onlineUsers) });
 
-    socket.on("joinRoom", (chatId) => {
+    socket.on("joinRoom", async ({ chatId, companionId }) => {
       socket.join(chatId);
+      if (companionId in onlineUsers) {
+        const companionSocketId = onlineUsers[companionId];
+        const companionSocket = io.sockets.sockets.get(companionSocketId);
+        if (companionSocket) {
+          companionSocket.join(chatId);
+          console.log("Joined the another room");
+        }
+      }
     });
 
-    socket.on("chatMessage", ({ chatId, cipher, senderId, _id, createdAt }) => {
-      console.log("handling message");
-      io.to(chatId).emit("chatMessage", {
-        chatId,
-        cipher,
-        senderId,
-        _id,
-        createdAt,
-      });
-    });
+    socket.on(
+      "chatMessage",
+      ({ chatId, cipher, senderId, _id, createdAt, picture }) => {
+        console.log("handling message");
+        io.to(chatId).emit("chatMessage", {
+          chatId,
+          cipher,
+          senderId,
+          _id,
+          createdAt,
+          picture,
+        });
+      }
+    );
 
     socket.on("deleteMessage", ({ messageId, chatId }) => {
       io.to(chatId).emit("deleteMessage", {

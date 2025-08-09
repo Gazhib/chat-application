@@ -1,7 +1,5 @@
 const { Schema, default: mongoose } = require("mongoose");
 
-
-
 const deviceSchema = new Schema({
   userId: {
     type: mongoose.Schema.Types.ObjectId,
@@ -94,6 +92,7 @@ const messageSchema = new Schema({
     iv: String,
     data: String,
   },
+  picture: String,
 });
 
 const userSchema = new Schema({

@@ -4,7 +4,7 @@ import { InputModal, type modalRefScheme } from "./inputModal/ui/InputModal";
 type Props = {
   typed: string;
   handleTyped: (value: string) => void;
-  handleSendMessage: () => void;
+  handleSendMessage: (previewUrl: string | undefined) => void;
 };
 
 export default function ChatInput({
@@ -55,6 +55,11 @@ export default function ChatInput({
     setPreviewUrl(undefined);
   };
 
+  const sendMessage = (previewUrl: string | undefined) => {
+    handleSendMessage(previewUrl);
+    onCloseModal();
+  };
+
   return (
     <footer className={`bottom-0 w-full bg-[#242526] h-[50px] flex flex-col`}>
       <div className="flex flex-row w-full h-full">
@@ -63,7 +68,7 @@ export default function ChatInput({
           className="h-full cursor-pointer aspect-square"
           onClick={() => fileInputRef.current?.click()}
         >
-          <i className="bi bi-paperclip text-white inline-block transform rotate-45 text-[4vh]"></i>
+          <i className="bi bi-paperclip text-white inline-block transform rotate-45 text-[25px]"></i>
         </button>
         <input
           value={typed}
@@ -71,13 +76,13 @@ export default function ChatInput({
             handleTyped(e.target.value);
           }}
           onKeyDown={(e) => {
-            if (e.key === "Enter") handleSendMessage();
+            if (e.key === "Enter") handleSendMessage(previewUrl);
           }}
           placeholder="Message..."
           className="h-full w-full focus:outline-none placeholder-[#72767D] text-white text-[14px] px-[10px]"
         />
         <button
-          onClick={() => handleSendMessage()}
+          onClick={() => handleSendMessage(previewUrl)}
           className="absolute right-[15px] h-full text-center cursor-pointer relative"
         >
           <i className="bi bi-send-fill text-white text-[18px]"></i>
@@ -89,6 +94,7 @@ export default function ChatInput({
         caption={typed}
         picture={previewUrl}
         handleCaption={handleTyped}
+        handleSendMessage={sendMessage}
       />
     </footer>
   );
