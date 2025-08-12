@@ -1,11 +1,11 @@
 import { useRef, useState } from "react";
-import { useUserStore, type userInfo } from "../../model/userZustand";
 import pp from "/pp.png";
-import { port } from "../../../../util/ui/ProtectedRoutes";
 import { motion } from "framer-motion";
-import CustomCropper from "../../../cropper/ui/CustomCropper";
 import type { Area } from "react-easy-crop";
-import getCroppedImg from "../../../cropper/model/CroppingImage";
+import { useUserStore, type userInfo } from "../../model/userZustand";
+import getCroppedImg from "@/entities/cropper/model/CroppingImage";
+import { port } from "@/util/ui/ProtectedRoutes";
+import CustomCropper from "@/entities/cropper/ui/CustomCropper";
 export default function UserInfo({
   user,
   isMe,

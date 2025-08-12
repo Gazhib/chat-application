@@ -1,7 +1,7 @@
+import { useUserStore } from "@/entities/user/model/userZustand";
+import { useUser } from "@/entities/user/model/useUser";
 import { useEffect, useState } from "react";
 import { Navigate, Outlet, useNavigate } from "react-router";
-import { useUser } from "../../entities/user/model/useUser";
-import { useUserStore } from "../../entities/user/model/userZustand";
 
 export const port = import.meta.env.VITE_APP_DF_PORT;
 export const authPort = import.meta.env.VITE_APP_AUTH_PORT;

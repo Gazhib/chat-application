@@ -1,7 +1,7 @@
 import { useNavigate } from "react-router";
 import { useUserStore } from "./userZustand";
-import { authPort, port } from "../../../util/ui/ProtectedRoutes";
 import { useState } from "react";
+import { authPort, port } from "@/util/ui/ProtectedRoutes";
 
 export const useUser = () => {
   const user = useUserStore((state) => state.user);

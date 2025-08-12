@@ -4,7 +4,7 @@ import Cropper, { type Area } from "react-easy-crop";
 interface CustomCropperScheme {
   image: string;
   setCroppedAreaPixels: (cropped: Area) => void;
-  buttonRef: React.Ref<HTMLButtonElement>;
+  buttonRef: React.RefObject<HTMLButtonElement | null>;
 }
 
 export default function CustomCropper({
@@ -18,7 +18,7 @@ export default function CustomCropper({
   if (image) {
     dialogRef.current?.showModal();
   }
-  const onCropComplete = (croppedArea: Area, croppedAreaPixels: Area) => {
+  const onCropComplete = (_croppedArea: Area, croppedAreaPixels: Area) => {
     setCroppedAreaPixels(croppedAreaPixels);
   };
 

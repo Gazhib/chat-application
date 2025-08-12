@@ -1,8 +1,8 @@
 import { useEffect, useState } from "react";
-import type { MessageSchema } from "../../../entities/chat/ui/chat-components/message-bubble/model/types";
 import { socket } from "./socket";
 import { useParams } from "react-router";
-import { useUserStore } from "../../../entities/user/model/userZustand";
+import type { MessageSchema } from "@/entities/chat/ui/components/messages/ui/components/message-bubble/model/types";
+import { useUserStore } from "@/entities/user/model/userZustand";
 
 interface hookScheme {
   id: string;

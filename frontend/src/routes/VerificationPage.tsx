@@ -1,3 +1,4 @@
+import { authPort } from "@/util/ui/ProtectedRoutes";
 import {
   Form,
   redirect,
@@ -5,7 +6,6 @@ import {
   useNavigation,
   useSearchParams,
 } from "react-router";
-import { authPort } from "../util/ui/ProtectedRoutes";
 
 export default function VerificationPage() {
   const [searchParams] = useSearchParams();

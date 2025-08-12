@@ -1,5 +1,5 @@
 import { Buffer } from "buffer";
-import { port } from "../../../util/ui/ProtectedRoutes";
+import { port } from "@util/ui/ProtectedRoutes";
 
 export async function generateKeyPair() {
   const keyPair = await crypto.subtle.generateKey(

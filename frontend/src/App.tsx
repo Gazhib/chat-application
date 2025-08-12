@@ -11,6 +11,7 @@ import VerificationPage, {
 import RootLayout from "./RootLayout";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import CurrentPage from "./CurrentPage";
+import VideoChat from "./routes/VideoChat";
 
 function App() {
   const client = new QueryClient();
@@ -50,6 +51,10 @@ function App() {
                       element: <Chat />,
                     },
                   ],
+                },
+                {
+                  path: "/call/:callId",
+                  element: <VideoChat />,
                 },
               ],
             },

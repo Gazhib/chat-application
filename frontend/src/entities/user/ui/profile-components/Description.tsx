@@ -39,7 +39,7 @@ export default function Description({
             {isMe && (
               <button
                 onClick={() => setIsChangingDescription((prev) => !prev)}
-                className="text-[10px] cursor-pointer hover:text-orange-500"
+                className="text-[10px] cursor-pointer hover:text-orange-500 outline-none"
               >
                 <i className="bi bi-pencil-square" />
               </button>
