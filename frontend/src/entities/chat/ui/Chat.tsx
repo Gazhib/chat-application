@@ -1,12 +1,12 @@
 import { useParams } from "react-router";
-import ChatHeader from "./chat-components/chat-header/Chatheader";
-import ChatInput from "./chat-components/chat-input/ChatInput";
 import { useState } from "react";
 import { useMessages } from "../model/useMessages";
-import Messages from "./chat-components/chat-messages/ui/Messages";
-import { useUserStore } from "../../user/model/userZustand";
-import { ProfileModal } from "../../user/ui/ProfileModal";
-import { useSidebar } from "../../../widget/extended-sidebar/model/useSidebar";
+import { useSidebar } from "@/widget/extended-sidebar/model/useSidebar";
+import { useUserStore } from "@/entities/user/model/userZustand";
+import ChatHeader from "./components/header/Chatheader";
+import Messages from "./components/messages/ui/Messages";
+import ChatInput from "./components/input/ChatInput";
+import { ProfileModal } from "@/entities/user/ui/ProfileModal";
 
 export default function Chat() {
   const { chatId } = useParams();

@@ -1,15 +1,15 @@
 import { useEffect, useState } from "react";
-import { port } from "../../../util/ui/ProtectedRoutes";
+import { port } from "@util/ui/ProtectedRoutes";
 import { encryptMessage, getSharedKey } from "./encryption";
 import { useNavigate } from "react-router";
-import { useKeyStore } from "../../../util/model/store/zustand";
-import type { MessageSchema } from "../ui/chat-components/message-bubble/model/types";
+import { useKeyStore } from "@util/model/store/zustand";
 import { useQuery } from "@tanstack/react-query";
 import { decryptMessage } from "./decryption";
-import { socket } from "../../../util/model/socket/socket";
+import { socket } from "@util/model/socket/socket";
 import { useMessageStore } from "./messageZustand";
-import { useUserStore, type userInfo } from "../../user/model/userZustand";
-import { usersStore } from "../ui/chat-components/chat-sidebar/model/useChatSidebar";
+import { useUserStore, type userInfo } from "@entities/user/model/userZustand";
+import type { MessageSchema } from "../ui/components/messages/ui/components/message-bubble/model/types";
+import { usersStore } from "../ui/components/sidebar/model/useChatSidebar";
 
 type sendMessageSchema = {
   typed: string;
@@ -122,7 +122,6 @@ export const useMessages = ({ chatId }: hookScheme) => {
   useEffect(() => {
     const handler = async (msg: MessageSchema) => {
       if (!sharedKey) return;
-      console.log(msg);
       const newMessage = await decryptMessage(sharedKey, {
         iv: msg.cipher.iv,
         data: msg.cipher.data,
@@ -141,6 +140,12 @@ export const useMessages = ({ chatId }: hookScheme) => {
       const updatedMessages = messages
         .filter((msg): msg is MessageSchema => msg !== undefined)
         .filter((msg): msg is MessageSchema => messageId !== msg._id);
+      const updatedUsers = users.map((u) =>
+        u.id === companion.id
+          ? { ...u, lastMessage: updatedMessages[updatedMessages.length - 1] }
+          : u
+      );
+      setUsers(updatedUsers);
       setMessages(updatedMessages);
     };
 

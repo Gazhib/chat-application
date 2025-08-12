@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import type { MessageSchema } from "../ui/chat-components/message-bubble/model/types";
+import type { MessageSchema } from "../ui/components/messages/ui/components/message-bubble/model/types";
 
 interface messageStoreState {
   messages: MessageSchema[];

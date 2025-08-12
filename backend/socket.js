@@ -10,7 +10,7 @@ const port = process.env.DF_PORT;
 
 export function initSocket(httpServer) {
   const onlineUsers = {};
-
+  const rooms = {};
   const io = new Server(httpServer, {
     path: "/socket.io",
     cors: {
@@ -51,6 +51,7 @@ export function initSocket(httpServer) {
 
   io.on("connection", (socket) => {
     const userId = socket.data.user.id;
+    let userCallRoom;
     onlineUsers[userId] = socket.id;
     io.emit("onlineList", { onlineUsersIds: Object.keys(onlineUsers) });
 
@@ -87,8 +88,42 @@ export function initSocket(httpServer) {
       });
     });
 
+    // add to a database soon
+    socket.on("call", (callId) => {
+      if (rooms[callId]) {
+        if (!rooms[callId].includes(socket.id)) rooms[callId].push(socket.id);
+      } else {
+        rooms[callId] = [socket.id];
+      }
+      console.log(rooms)
+      const otherUser = rooms[callId].find((id) => id !== socket.id);
+      userCallRoom = callId;
+      if (otherUser) {
+        socket.emit("otherUser", otherUser);
+        socket.to(otherUser).emit("userJoined", socket.id);
+      }
+    });
+
+    socket.on("offer", (payload) => {
+      io.to(payload.target).emit("offer", payload);
+    });
+
+    socket.on("answer", (payload) => {
+      io.to(payload.target).emit("answer", payload);
+    });
+
+    socket.on("ice-candidate", (incoming) => {
+      io.to(incoming.target).emit("ice-candidate", incoming.candidate);
+    });
+
     socket.on("disconnect", (reason) => {
       delete onlineUsers[userId];
+      if (userCallRoom) {
+        if (rooms[userCallRoom]) {
+          rooms[userCallRoom] = rooms[userCallRoom].filter((id) => id !== socket.id);
+        }
+      }
+      console.log(rooms)
       io.emit("onlineList", { onlineUsersIds: Object.keys(onlineUsers) });
     });
   });

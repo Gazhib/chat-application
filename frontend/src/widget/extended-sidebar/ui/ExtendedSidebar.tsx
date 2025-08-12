@@ -1,7 +1,7 @@
 import { motion, type MotionProps } from "framer-motion";
 import { forwardRef, useEffect, useRef } from "react";
 import pp from "/pp.png";
-import { useUserStore } from "../../../entities/user/model/userZustand";
+import { useUserStore } from "@/entities/user/model/userZustand";
 interface ExtendedSidebar extends MotionProps {
   handleLogout: () => void;
   handleExtension: () => void;

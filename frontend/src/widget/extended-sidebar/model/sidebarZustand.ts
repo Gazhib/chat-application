@@ -1,6 +1,6 @@
 import { create } from "zustand";
-import type { modalRefScheme } from "../../../entities/user/ui/ProfileModal";
 import { createRef } from "react";
+import type { modalRefScheme } from "@/shared/modal/ui/Modal";
 
 interface SidebarStore {
   modalRef: React.RefObject<modalRefScheme> | null;

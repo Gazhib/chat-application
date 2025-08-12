@@ -1,5 +1,5 @@
+import { getKeyPair } from "@/entities/chat/model/encryption";
 import { create } from "zustand";
-import { getKeyPair } from "../../../entities/chat/model/encryption";
 
 interface keyStoreState {
   keyPairs?: {

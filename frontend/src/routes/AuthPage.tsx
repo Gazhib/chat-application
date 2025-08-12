@@ -1,7 +1,7 @@
+import { getKeyPair } from "@/entities/chat/model/encryption";
+import Auth from "@/features/authentication/ui/Auth";
+import { authPort } from "@/util/ui/ProtectedRoutes";
 import { redirect, useNavigate, useSearchParams } from "react-router";
-import Auth from "../features/authentication/ui/Auth";
-import { getKeyPair } from "../entities/chat/model/encryption";
-import { authPort } from "../util/ui/ProtectedRoutes";
 export default function AuthPage() {
   const [searchParams] = useSearchParams();
   const mode = searchParams.get("mode");
