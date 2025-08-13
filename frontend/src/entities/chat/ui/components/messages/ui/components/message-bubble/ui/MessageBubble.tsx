@@ -1,12 +1,15 @@
 import { useRef } from "react";
 import type { MessageSchema } from "../model/types";
-import { useContextMenu } from "./context-menu/model/useContextMenu";
-import ContextMenu from "./context-menu/ui/ContextMenu";
-import pp from "/pp.png";
-import { PhotoModal } from "./PhotoModal/PhotoModal";
+import { PhotoModal } from "./components/PhotoModal/PhotoModal";
 import { useUserStore, type userInfo } from "@/entities/user/model/userZustand";
 import { useSidebar } from "@/widget/extended-sidebar/model/useSidebar";
 import type { modalRefScheme } from "@/shared/modal/ui/Modal";
+import Meta from "./components/Meta";
+import ProfilePicture from "./components/ProfilePicture";
+import { pp } from "@/entities/user/model/useUser";
+import { useContextMenu } from "./components/context-menu/model/useContextMenu";
+import ContextMenu from "./components/context-menu/ui/ContextMenu";
+import CallMessage from "./components/CallMessage";
 type Props = {
   message: MessageSchema;
   place: string;
@@ -45,17 +48,13 @@ export default function MessageBubble({
         isMe ? "flex-row-reverse self-end" : "flex-row self-start"
       } gap-[10px] relative`}
     >
-      <img
-        className="rounded-full h-[40px] w-[40px] object-cover self-end cursor-pointer"
-        onClick={handleOpenModal}
-        src={
-          isMe
-            ? user?.profilePicture === "Empty"
-              ? pp
-              : user?.profilePicture
-            : companion.profilePicture ?? pp
+      <ProfilePicture
+        handleOpenModal={handleOpenModal}
+        picture={
+          isMe ? user?.profilePicture || pp : companion.profilePicture || pp
         }
       />
+
       <section
         onContextMenu={(e) => {
           e.preventDefault();
@@ -70,25 +69,21 @@ export default function MessageBubble({
         {!isMe && (
           <div
             onClick={handleOpenModal}
-            className="text-blue-600 text-[12px] cursor-pointer"
+            className="text-blue-600 text-[12px] cursor-pointer self-start"
           >
             {companion.login}
           </div>
         )}
-        <div className={`flex flex-row gap-[10px] items-end relative `}>
-          <section className="flex flex-col">
-            <img
-              onClick={handleOpenPhoto}
-              src={message.picture}
-              className="block w-full max-w-[420px]  h-auto object-cover cursor-pointer"
-            />
-            <span className="break-all">{message.meta}</span>
-          </section>
-
-          <span className="text-[10px] text-gray-500 self-end bottom-[-10px]">
-            {time}
-          </span>
-        </div>
+        {message.messageType === "call" ? (
+          <CallMessage time={time} callId={message.meta} />
+        ) : (
+          <Meta
+            time={time}
+            picture={message.picture}
+            meta={message.meta}
+            handleOpenPhoto={handleOpenPhoto}
+          />
+        )}
       </section>
       {isContextMenu && (
         <ContextMenu handleClickAway={handleClick} message={message} />

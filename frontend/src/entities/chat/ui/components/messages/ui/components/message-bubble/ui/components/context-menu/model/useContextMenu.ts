@@ -11,15 +11,14 @@ export const useContextMenu = ({ messageId }: contextMenu) => {
   const [isContextMenu, setIsContextMenu] = useState(false);
   const { chatId } = useParams();
 
-  const [editedMessage,] = useState();
+  const [editedMessage] = useState();
 
   const handleDelete = async () => {
     socket.emit("deleteMessage", { messageId, chatId });
 
-    const response = await fetch(`${port}/delete-message`, {
-      method: "POST",
+    const response = await fetch(`${port}/messages/${messageId}`, {
+      method: "DELETE",
       credentials: "include",
-      body: JSON.stringify({ messageId }),
       headers: {
         "Content-Type": "application/json",
       },

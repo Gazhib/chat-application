@@ -3,6 +3,9 @@ import { useUserStore } from "./userZustand";
 import { useState } from "react";
 import { authPort, port } from "@/util/ui/ProtectedRoutes";
 
+export const pp =
+  "https://cdn.pixabay.com/photo/2015/10/05/22/37/blank-profile-picture-973460_960_720.png";
+
 export const useUser = () => {
   const user = useUserStore((state) => state.user);
   const setUser = useUserStore((state) => state.setUser);
@@ -74,8 +77,8 @@ export const useUser = () => {
   const [typed, setTyped] = useState("");
 
   const handleChangeDescription = async () => {
-    const response = await fetch(`${port}/change-user-description`, {
-      method: "POST",
+    const response = await fetch(`${port}/user-description`, {
+      method: "PATCH",
       headers: {
         "Content-Type": "application/json",
       },
