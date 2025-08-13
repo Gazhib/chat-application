@@ -9,26 +9,8 @@ const http = require("http");
 const { initSocket } = require("./socket");
 const { messageModel, chatModel, userModel } = require("./models");
 const { default: mongoose } = require("mongoose");
-const {
-  S3Client,
-  PutObjectCommand,
-  GetObjectCommand,
-} = require("@aws-sdk/client-s3");
 require("dotenv").config({ path: "../.env" });
-const { getSignedUrl } = require("@aws-sdk/s3-request-presigner");
-
-const BUCKET_NAME = process.env.BUCKET_NAME;
-const BUCKET_REGION = process.env.BUCKET_REGION;
-const BUCKET_ACCESS_KEY = process.env.BUCKET_ACCESS_KEY;
-const BUCKET_SECRET_ACCESS_KEY = process.env.BUCKET_SECRET_ACCESS_KEY;
-
-const s3 = new S3Client({
-  credentials: {
-    accessKeyId: BUCKET_ACCESS_KEY,
-    secretAccessKey: BUCKET_SECRET_ACCESS_KEY,
-  },
-  region: BUCKET_REGION,
-});
+const { getPicture, putPicture } = require("./bucket");
 
 app.use(
   cors({
@@ -72,15 +54,15 @@ const tokenMiddleware = (req, res, next) => {
 
 const server = http.createServer(app);
 
-const io = initSocket(server);
+initSocket(server);
 
 app.post(
-  "/send-message",
+  "/messages",
   tokenMiddleware,
   upload.single("image"),
   async (req, res) => {
     const { message } = req.body;
-    const { chatId, senderId, cipher, picture } = JSON.parse(message);
+    const { chatId, senderId, cipher, picture, type } = JSON.parse(message);
 
     const messageType = picture && cipher ? "mix" : picture ? "picture" : "txt";
 
@@ -88,24 +70,9 @@ app.post(
 
     const imageName = randomImageName();
     if (messageType === "mix" || messageType === "picture") {
-      const file = req.file.buffer;
-      const params = {
-        Bucket: BUCKET_NAME,
-        Key: imageName,
-        Body: file,
-        ContentType: req.file.mimetype,
-      };
-
-      const putObjectCommand = new PutObjectCommand(params);
-
-      await s3.send(putObjectCommand);
-
-      const getObjectParams = {
-        Bucket: BUCKET_NAME,
-        Key: imageName,
-      };
-      const command = new GetObjectCommand(getObjectParams);
-      url = await getSignedUrl(s3, command, { expiresIn: 3600 });
+      const file = req.file;
+      await putPicture({ file, imageName });
+      url = await getPicture({ imageName });
     }
 
     const newMessage = new messageModel({
@@ -113,7 +80,7 @@ app.post(
       senderId,
       cipher,
       picture,
-      messageType,
+      messageType: type ?? messageType,
       picture:
         messageType === "mix" || messageType === "picture"
           ? imageName
@@ -123,6 +90,7 @@ app.post(
     await newMessage.save();
 
     newMessage.picture = url;
+    console.log(newMessage.messageType, type);
 
     res.status(200).json(newMessage);
   }
@@ -163,31 +131,23 @@ app.get("/users", tokenMiddleware, async (req, res) => {
     }
 
     if (user.profilePicture) {
-      const getObjectParams = {
-        Bucket: BUCKET_NAME,
-        Key: user.profilePicture,
-      };
-      const command = new GetObjectCommand(getObjectParams);
-      const url = await getSignedUrl(s3, command, { expiresIn: 3600 });
+      const url = await getPicture({ imageName: user.profilePicture });
       user.profilePicture = url;
     }
 
     if (user.lastMessage.picture) {
-      const getObjectParams = {
-        Bucket: BUCKET_NAME,
-        Key: user.lastMessage.picture,
-      };
-      const command = new GetObjectCommand(getObjectParams);
-      const url = await getSignedUrl(s3, command, { expiresIn: 3600 });
+      const url = await getPicture({ imageName: user.lastMessage.picture });
       user.lastMessage.picture = url;
     }
+
+    user.chatId = chat._id;
   }
 
   res.status(200).json(neededUsers);
 });
 
 app.post("/users/:userName", tokenMiddleware, async (req, res) => {
-  const userName = req.params.userName;
+  const { userName } = req.params;
 
   const users = await userModel
     .find({
@@ -202,12 +162,7 @@ app.post("/users/:userName", tokenMiddleware, async (req, res) => {
     delete user._id;
 
     if (user.profilePicture) {
-      const getObjectParams = {
-        Bucket: BUCKET_NAME,
-        Key: user.profilePicture,
-      };
-      const command = new GetObjectCommand(getObjectParams);
-      const url = await getSignedUrl(s3, command, { expiresIn: 3600 });
+      const url = await getPicture({ imageName: user.profilePicture });
       user.profilePicture = url;
     }
   }
@@ -216,32 +171,7 @@ app.post("/users/:userName", tokenMiddleware, async (req, res) => {
 });
 
 app.post("/chats/:chatId", tokenMiddleware, async (req, res) => {
-  const myId = req.userPayload?.sub;
-  const otherId = req.params.chatId;
-
-  let chat = await chatModel.findOne({
-    chatType: "DIRECT",
-    membershipIds: { $all: [myId, otherId], $size: 2 },
-  });
-
-  if (!chat) {
-    const result = new chatModel({
-      chatType: "DIRECT",
-      membershipIds: [myId, otherId],
-      createdAt: Date.now(),
-      seq: 0,
-      creatorId: myId,
-    });
-
-    chat = result;
-    await result.save();
-  }
-
-  res.status(200).json({ chatId: chat._id.toString() });
-});
-
-app.post("/get-chat-info", tokenMiddleware, async (req, res) => {
-  const { chatId } = req.body;
+  const { chatId } = req.params;
   const userId = req.userPayload?.sub;
 
   const chat = await chatModel
@@ -263,12 +193,7 @@ app.post("/get-chat-info", tokenMiddleware, async (req, res) => {
       .findOne({ _id: companionId })
       .select("_id login profilePicture email description");
     if (user.profilePicture) {
-      const getObjectParams = {
-        Bucket: BUCKET_NAME,
-        Key: user.profilePicture,
-      };
-      const command = new GetObjectCommand(getObjectParams);
-      const url = await getSignedUrl(s3, command, { expiresIn: 3600 });
+      const url = await getPicture({ imageName: user.profilePicture });
       user.profilePicture = url;
     }
     user.id = user._id;
@@ -277,57 +202,12 @@ app.post("/get-chat-info", tokenMiddleware, async (req, res) => {
 
     for (const message of chat.messages) {
       if (message.messageType === "picture" || message.messageType === "mix") {
-        const getObjectParams = {
-          Bucket: BUCKET_NAME,
-          Key: message.picture,
-        };
-        const command = new GetObjectCommand(getObjectParams);
-        const url = await getSignedUrl(s3, command, { expiresIn: 3600 });
+        const url = await getPicture({ imageName: message.picture });
         message.picture = url;
       }
-      console.log(message);
     }
 
     return res.status(200).json({ chat, companion });
-  }
-
-  return res.status(400).json("Something went wrong...");
-});
-
-app.post("/get-companion-info", tokenMiddleware, async (req, res) => {
-  const { chatId } = req.body;
-  console.log(chatId);
-  const userId = req.userPayload?.sub;
-
-  const chat = await chatModel.findById(chatId);
-  if (!chat || (userId && !chat.membershipIds.includes(userId))) {
-    return res.status(404).json({ message: "Invalid chat" });
-  }
-
-  const membershipIds = chat.membershipIds;
-
-  const companionId = membershipIds.find(
-    (id) => id.toString() !== userId?.toString()
-  );
-
-  if (companionId) {
-    const user = await userModel
-      .findOne({ _id: companionId })
-      .select("_id login profilePicture email description");
-    if (user.profilePicture) {
-      const getObjectParams = {
-        Bucket: BUCKET_NAME,
-        Key: user.profilePicture,
-      };
-      const command = new GetObjectCommand(getObjectParams);
-      const url = await getSignedUrl(s3, command, { expiresIn: 3600 });
-      user.profilePicture = url;
-    }
-    user.id = user._id;
-    const companion = { ...user._doc, id: user._id };
-    delete companion._id;
-
-    return res.status(200).json({ companion });
   }
 
   return res.status(400).json("Something went wrong...");
@@ -371,10 +251,9 @@ app.post("/peer-public-key", tokenMiddleware, async (req, res) => {
   return res.status(200).json({ publicKey: user.publicKey });
 });
 
-app.post("/delete-message", async (req, res) => {
-  const { messageId } = req.body;
+app.delete("/messages/:messageId", async (req, res) => {
+  const { messageId } = req.params;
   const message = await messageModel.findByIdAndDelete(messageId);
-  console.log(message);
   if (!message) {
     return res.status(400).json("Could not find deleted message");
   }
@@ -382,7 +261,7 @@ app.post("/delete-message", async (req, res) => {
   return res.status(200).json("Successfully deleted message");
 });
 
-app.post("/change-user-description", async (req, res) => {
+app.patch("/user-description", async (req, res) => {
   const { userId, description } = req.body;
   const user = await userModel.findById(userId);
   if (!user) {
@@ -399,43 +278,25 @@ const randomImageName = () => {
   return crypto.randomUUID().toString();
 };
 
-app.post(
-  "/update-profile-picture",
-  upload.single("image"),
-  async (req, res) => {
-    const { userId } = req.body;
-    const file = req.file.buffer;
-    console.log(file);
-    const imageName = randomImageName();
-    const params = {
-      Bucket: BUCKET_NAME,
-      Key: imageName,
-      Body: file,
-      ContentType: req.file.mimetype,
-    };
+app.patch("/profile-picture", upload.single("image"), async (req, res) => {
+  const { userId } = req.body;
+  const file = req.file;
+  const imageName = randomImageName();
 
-    const putObjectCommand = new PutObjectCommand(params);
+  const user = await userModel.findById(userId);
 
-    const user = await userModel.findById(userId);
-
-    if (!user) {
-      return res.status(400).json("Something went wrong");
-    }
-
-    await s3.send(putObjectCommand);
-
-    user.profilePicture = imageName;
-
-    const getObjectParams = {
-      Bucket: BUCKET_NAME,
-      Key: user.profilePicture,
-    };
-    const command = new GetObjectCommand(getObjectParams);
-    const url = await getSignedUrl(s3, command, { expiresIn: 3600 });
-    await user.save();
-    return res.status(200).json({ profilePicture: url });
+  if (!user) {
+    return res.status(400).json("Something went wrong");
   }
-);
+
+  await putPicture({ imageName, file: req });
+
+  user.profilePicture = imageName;
+
+  const url = await getPicture({ imageName });
+  await user.save();
+  return res.status(200).json({ profilePicture: url });
+});
 
 app.get("/me", tokenMiddleware, async (req, res) => {
   const { login, role, email, isVerified, sub, description, profilePicture } =

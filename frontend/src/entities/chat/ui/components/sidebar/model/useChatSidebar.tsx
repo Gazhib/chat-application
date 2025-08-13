@@ -11,6 +11,7 @@ import { decryptMessage } from "@/entities/chat/model/decryption";
 
 export interface User extends userInfo {
   lastMessage: MessageSchema;
+  chatId: string;
 }
 
 type userStoreSchema = {
@@ -50,17 +51,9 @@ export const useChatSidebar = () => {
 
   const navigate = useNavigate();
 
-  const openChat = async (otherUserId: string) => {
-    const response = await fetch(`${port}/chats/${otherUserId}`, {
-      method: "POST",
-      credentials: "include",
-      headers: {
-        "Content-Type": "application/json",
-      },
-    });
-
-    const responseData = await response.json();
-    navigate(`/chats/${responseData.chatId}`);
+  const openChat = async (chatId: string) => {
+    setTyped("");
+    navigate(`/chats/${chatId}`);
   };
 
   const { data: searchResults, isLoading: isSearchResultsLoading } = useQuery({
@@ -113,7 +106,6 @@ export const useChatSidebar = () => {
     };
     handle();
   }, [data]);
-
 
   return {
     typed,

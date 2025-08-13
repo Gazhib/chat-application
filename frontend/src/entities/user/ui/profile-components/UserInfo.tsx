@@ -1,11 +1,11 @@
 import { useRef, useState } from "react";
-import pp from "/pp.png";
 import { motion } from "framer-motion";
 import type { Area } from "react-easy-crop";
 import { useUserStore, type userInfo } from "../../model/userZustand";
 import getCroppedImg from "@/entities/cropper/model/CroppingImage";
 import { port } from "@/util/ui/ProtectedRoutes";
 import CustomCropper from "@/entities/cropper/ui/CustomCropper";
+import { pp } from "../../model/useUser";
 export default function UserInfo({
   user,
   isMe,
@@ -35,8 +35,8 @@ export default function UserInfo({
         formData.append("image", newFile);
         formData.append("userId", user?.id || "");
 
-        const response = await fetch(`${port}/update-profile-picture`, {
-          method: "POST",
+        const response = await fetch(`${port}/profile-picture`, {
+          method: "PATCH",
           body: formData,
           credentials: "include",
         });

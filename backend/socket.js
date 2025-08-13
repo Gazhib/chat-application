@@ -62,15 +62,14 @@ export function initSocket(httpServer) {
         const companionSocket = io.sockets.sockets.get(companionSocketId);
         if (companionSocket) {
           companionSocket.join(chatId);
-          console.log("Joined the another room");
         }
       }
     });
 
     socket.on(
       "chatMessage",
-      ({ chatId, cipher, senderId, _id, createdAt, picture }) => {
-        console.log("handling message");
+      ({ chatId, cipher, senderId, _id, createdAt, picture, messageType }) => {
+        console.log("handling message", messageType);
         io.to(chatId).emit("chatMessage", {
           chatId,
           cipher,
@@ -78,6 +77,7 @@ export function initSocket(httpServer) {
           _id,
           createdAt,
           picture,
+          messageType,
         });
       }
     );
@@ -90,12 +90,13 @@ export function initSocket(httpServer) {
 
     // add to a database soon
     socket.on("call", (callId) => {
+      console.log(callId);
       if (rooms[callId]) {
         if (!rooms[callId].includes(socket.id)) rooms[callId].push(socket.id);
       } else {
         rooms[callId] = [socket.id];
       }
-      console.log(rooms)
+      console.log(rooms);
       const otherUser = rooms[callId].find((id) => id !== socket.id);
       userCallRoom = callId;
       if (otherUser) {
@@ -116,14 +117,26 @@ export function initSocket(httpServer) {
       io.to(incoming.target).emit("ice-candidate", incoming.candidate);
     });
 
+    socket.on("hangUp", () => {
+      if (userCallRoom && rooms[userCallRoom]) {
+        const companionId = rooms[userCallRoom].find((id) => id !== socket.id);
+        delete rooms[userCallRoom];
+        io.to(companionId).emit("userLeft");
+      }
+    });
+
     socket.on("disconnect", (reason) => {
       delete onlineUsers[userId];
       if (userCallRoom) {
         if (rooms[userCallRoom]) {
-          rooms[userCallRoom] = rooms[userCallRoom].filter((id) => id !== socket.id);
+          const companionId = rooms[userCallRoom].find(
+            (id) => id !== socket.id
+          );
+          delete rooms[userCallRoom];
+          io.to(companionId).emit("userLeft");
         }
       }
-      console.log(rooms)
+      console.log(rooms);
       io.emit("onlineList", { onlineUsersIds: Object.keys(onlineUsers) });
     });
   });

@@ -17,6 +17,7 @@ type sendMessageSchema = {
   senderId: string;
   sharedKey?: CryptoKey;
   picture: string | undefined;
+  type?: string;
 };
 
 export type newMessageSchema = {
@@ -66,9 +67,8 @@ export const useMessages = ({ chatId }: hookScheme) => {
   } = useQuery({
     queryKey: [chatId],
     queryFn: async (): Promise<chatData> => {
-      const chatResponse = await fetch(`${port}/get-chat-info`, {
+      const chatResponse = await fetch(`${port}/chats/${chatId}`, {
         method: "POST",
-        body: JSON.stringify({ chatId }),
         headers: {
           "Content-Type": "application/json",
         },
@@ -161,15 +161,12 @@ export const useMessages = ({ chatId }: hookScheme) => {
     setMessages([...messages, newMessage]);
   };
 
-  useEffect(() => {
-    console.log(companion);
-  }, [companion]);
-
   const sendMessage = async ({
     typed,
     chatId,
     senderId,
     picture,
+    type,
   }: sendMessageSchema) => {
     if ((typed.trim() === "" && picture === undefined) || !sharedKey) return;
     const formData = new FormData();
@@ -192,11 +189,12 @@ export const useMessages = ({ chatId }: hookScheme) => {
         data,
       },
       picture,
+      type,
     };
 
     formData.append("message", JSON.stringify(message));
 
-    const response = await fetch(`${port}/send-message`, {
+    const response = await fetch(`${port}/messages`, {
       method: "POST",
       body: formData,
       credentials: "include",

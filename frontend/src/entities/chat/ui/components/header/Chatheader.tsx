@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { usePersonalSocket } from "@util/model/socket/usePersonalSocket";
 import type { userInfo } from "@entities/user/model/userZustand";
+import { useChatHeader } from "./model/useChatHeader";
 type Props = {
   companionInfo: userInfo;
   myId: string;
@@ -13,6 +14,8 @@ export default function ChatHeader({ myId, companionInfo }: Props) {
   });
 
   const { onlineUsers } = usePersonalSocket({ id: myId });
+
+  const { handleCall } = useChatHeader();
 
   useEffect(() => {
     if (companionInfo && companionInfo.id.trim() !== "") {
@@ -38,7 +41,10 @@ export default function ChatHeader({ myId, companionInfo }: Props) {
         </span>
       </section>
       <section className="flex flex-row gap-[15px]">
-        <button className="cursor-pointer">
+        <button
+          onClick={handleCall}
+          className="cursor-pointer"
+        >
           <i className="bi bi-telephone-fill"></i>
         </button>
         <button className="cursor-pointer">

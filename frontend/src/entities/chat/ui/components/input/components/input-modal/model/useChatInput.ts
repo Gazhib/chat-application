@@ -46,7 +46,6 @@ export const useChatInput = ({ handleSendMessage }: useChatInputScheme) => {
 
   const onCloseModal = () => {
     modalRef.current?.closeModal();
-    console.log("Modal closed");
     setPreviewUrl(undefined);
   };
 

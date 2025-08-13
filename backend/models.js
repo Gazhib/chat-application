@@ -1,5 +1,34 @@
 const { Schema, default: mongoose } = require("mongoose");
 
+const messageSchema = new Schema({
+  chatId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "chats",
+  },
+  senderId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "users",
+  },
+  createdAt: {
+    type: Date,
+    default: Date.now,
+  },
+  seq: Number,
+  messageType: {
+    type: String,
+    default: "txt",
+  },
+  status: {
+    delievered: Number,
+    read: Number,
+  },
+  cipher: {
+    iv: String,
+    data: String,
+  },
+  picture: String,
+});
+
 const deviceSchema = new Schema({
   userId: {
     type: mongoose.Schema.Types.ObjectId,
@@ -66,35 +95,6 @@ const membershipSchema = new Schema({
   lastReadSeq: Number,
 });
 
-const messageSchema = new Schema({
-  chatId: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: "chats",
-  },
-  senderId: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: "users",
-  },
-  createdAt: {
-    type: Date,
-    default: Date.now,
-  },
-  seq: Number,
-  messageType: {
-    type: String,
-    default: "txt",
-  },
-  status: {
-    delievered: Number,
-    read: Number,
-  },
-  cipher: {
-    iv: String,
-    data: String,
-  },
-  picture: String,
-});
-
 const userSchema = new Schema({
   email: {
     type: String,
@@ -134,6 +134,10 @@ const userSchema = new Schema({
   },
   lastMessage: {
     type: messageSchema,
+    required: false,
+  },
+  chatId: {
+    type: String,
     required: false,
   },
   verifyCode: String,
