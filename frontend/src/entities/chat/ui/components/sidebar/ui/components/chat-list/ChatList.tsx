@@ -10,7 +10,7 @@ interface ChatList {
 export default function ChatList({ typed, searchResults }: ChatList) {
   const { user, users, openChat } = useChatSidebar();
 
-  const { onlineUsers } = usePersonalSocket({ id: user?.id ?? "" });
+  const { onlineUsers } = usePersonalSocket({ id: user?._id ?? "" });
   return (
     <ul>
       <List

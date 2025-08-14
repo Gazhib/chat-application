@@ -25,7 +25,6 @@ export default function Chat() {
     sendMessage({
       typed,
       chatId: chatId || "",
-      senderId: info?.id ?? "",
       picture: previewUrl,
     });
     setTyped("");
@@ -33,12 +32,12 @@ export default function Chat() {
 
   return (
     <section className="h-screen flex flex-col bg-[#1E1F22]">
-      <ChatHeader companionInfo={companion} myId={info?.id ?? ""} />
+      <ChatHeader companionInfo={companion} myId={info?._id ?? ""} />
       <main className="flex-1 w-[calc(100vw-290px)] min-h-0 max-h-[calc(100vh-110px)] flex flex-col px-[20px] py-[10px] pb-[20px] overflow-y-auto gap-[10px]">
         <Messages
           isLoading={isLoading}
           messages={messages}
-          myId={info?.id}
+          myId={info?._id}
           companion={companion}
           setCurrentUserModal={setCurrentUserModal}
         />

@@ -47,7 +47,7 @@ const deviceSchema = new Schema({
 const chatSchema = new Schema({
   chatType: {
     type: String,
-    required: true,
+    default: "DIRECT",
   },
   creatorId: {
     type: mongoose.Schema.Types.ObjectId,

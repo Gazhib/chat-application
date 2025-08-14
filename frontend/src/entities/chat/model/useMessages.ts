@@ -14,18 +14,8 @@ import { usersStore } from "../ui/components/sidebar/model/useChatSidebar";
 type sendMessageSchema = {
   typed: string;
   chatId: string;
-  senderId: string;
   sharedKey?: CryptoKey;
   picture: string | undefined;
-  type?: string;
-};
-
-export type newMessageSchema = {
-  message: {
-    chatId: string;
-    senderId: string;
-    cipher: { iv: string; data: string };
-  };
 };
 
 type chatData = {
@@ -55,7 +45,7 @@ export const useMessages = ({ chatId }: hookScheme) => {
     data: { initialMessages, companion } = {
       initialMessages: [],
       companion: {
-        id: "",
+        _id: "",
         login: "",
         profilePicture: "",
         role: "",
@@ -67,18 +57,22 @@ export const useMessages = ({ chatId }: hookScheme) => {
   } = useQuery({
     queryKey: [chatId],
     queryFn: async (): Promise<chatData> => {
-      const chatResponse = await fetch(`${port}/chats/${chatId}`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        credentials: "include",
-      });
+      const chatResponse = await fetch(
+        `${port}/chats/${chatId}/messages?limit=30`,
+        {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          credentials: "include",
+        }
+      );
       if (!chatResponse.ok) navigate("/auth?mode=login");
 
-      const { chat, companion } = await chatResponse.json();
-      setCompanionId(companion.id);
-      return { initialMessages: chat.messages, companion };
+      const { nextCursor, messages, companion } = await chatResponse.json();
+
+      setCompanionId(companion._id);
+      return { initialMessages: messages.reverse(), companion };
     },
     staleTime: Infinity,
   });
@@ -86,10 +80,10 @@ export const useMessages = ({ chatId }: hookScheme) => {
   useEffect(() => {
     setMessages([]);
     async function handle() {
-      if (chatId && user?.id && keyPairs) {
+      if (chatId && user?._id && keyPairs) {
         const newSharedKey = await getSharedKey(
           chatId,
-          user.id,
+          user._id,
           keyPairs.privateKey
         );
 
@@ -127,8 +121,9 @@ export const useMessages = ({ chatId }: hookScheme) => {
         data: msg.cipher.data,
       });
       msg.meta = newMessage;
+      if (msg.senderId === user?._id) return;
       const updatedUsers = users.map((u) =>
-        u.id === companion.id ? { ...u, lastMessage: msg } : u
+        u._id === companion._id ? { ...u, lastMessage: msg } : u
       );
       setUsers(updatedUsers);
       handleMessage(msg);
@@ -141,7 +136,7 @@ export const useMessages = ({ chatId }: hookScheme) => {
         .filter((msg): msg is MessageSchema => msg !== undefined)
         .filter((msg): msg is MessageSchema => messageId !== msg._id);
       const updatedUsers = users.map((u) =>
-        u.id === companion.id
+        u._id === companion._id
           ? { ...u, lastMessage: updatedMessages[updatedMessages.length - 1] }
           : u
       );
@@ -161,13 +156,7 @@ export const useMessages = ({ chatId }: hookScheme) => {
     setMessages([...messages, newMessage]);
   };
 
-  const sendMessage = async ({
-    typed,
-    chatId,
-    senderId,
-    picture,
-    type,
-  }: sendMessageSchema) => {
+  const sendMessage = async ({ typed, chatId, picture }: sendMessageSchema) => {
     if ((typed.trim() === "" && picture === undefined) || !sharedKey) return;
     const formData = new FormData();
     if (picture) {
@@ -183,14 +172,32 @@ export const useMessages = ({ chatId }: hookScheme) => {
 
     const message = {
       chatId,
-      senderId,
       cipher: {
         iv,
         data,
       },
       picture,
-      type,
     };
+    const createdAt = new Date();
+    const msg = {
+      ...message,
+      senderId: user?._id ?? "",
+      createdAt,
+      seq: 0,
+      messageType: picture && typed ? "mix" : picture ? "picture" : "txt",
+      meta: typed,
+      status: {
+        delievered: 0,
+        read: 0,
+      },
+    };
+
+    handleMessage(msg);
+
+    const updatedUsers = users.map((u) =>
+      u._id === companion._id ? { ...u, lastMessage: msg } : u
+    );
+    setUsers(updatedUsers);
 
     formData.append("message", JSON.stringify(message));
 
@@ -205,8 +212,6 @@ export const useMessages = ({ chatId }: hookScheme) => {
     }
 
     const newMessage = await response.json();
-
-    console.log(newMessage);
 
     socket.emit("chatMessage", newMessage);
   };

@@ -33,7 +33,7 @@ export default function UserInfo({
         const formData = new FormData();
 
         formData.append("image", newFile);
-        formData.append("userId", user?.id || "");
+        formData.append("userId", user?._id || "");
 
         const response = await fetch(`${port}/profile-picture`, {
           method: "PATCH",

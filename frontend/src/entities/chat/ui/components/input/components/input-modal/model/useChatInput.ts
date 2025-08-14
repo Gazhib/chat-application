@@ -50,7 +50,6 @@ export const useChatInput = ({ handleSendMessage }: useChatInputScheme) => {
   };
 
   const sendMessage = () => {
-    console.log(previewUrl);
     handleSendMessage(previewUrl);
     onCloseModal();
   };

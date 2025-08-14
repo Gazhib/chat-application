@@ -18,8 +18,8 @@ export default function ChatHeader({ myId, companionInfo }: Props) {
   const { handleCall } = useChatHeader();
 
   useEffect(() => {
-    if (companionInfo && companionInfo.id.trim() !== "") {
-      if (onlineUsers.includes(companionInfo.id))
+    if (companionInfo && companionInfo._id.trim() !== "") {
+      if (onlineUsers.includes(companionInfo._id))
         setStatus({ status: "Online", lastSeen: "now" });
       else
         setStatus({
@@ -27,7 +27,7 @@ export default function ChatHeader({ myId, companionInfo }: Props) {
           lastSeen: "Long time ago",
         });
     }
-  }, [companionInfo, onlineUsers, companionInfo.id]);
+  }, [companionInfo, onlineUsers, companionInfo._id]);
 
   return (
     <header className="z-1 px-[20px] h-[60px] border-b-[1px] border-[#333333] flex flex-row text-white w-full justify-between items-center bg-[#242526] ">

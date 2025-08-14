@@ -37,7 +37,7 @@ export default function Messages({
           return (
             <MessageBubble
               setCurrentUserModal={setCurrentUserModal}
-              messageId={message._id}
+              messageId={message._id!}
               key={`${message.createdAt}-${message.meta}-${index}`}
               message={message}
               place={message.senderId !== myId ? "left" : "right"}
