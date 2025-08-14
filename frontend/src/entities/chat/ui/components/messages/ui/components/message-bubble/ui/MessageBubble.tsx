@@ -42,6 +42,7 @@ export default function MessageBubble({
     photoModalRef.current?.openModal();
   };
 
+
   return (
     <div
       className={`max-w-[65%] flex ${

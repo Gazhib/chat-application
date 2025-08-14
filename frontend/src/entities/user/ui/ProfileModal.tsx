@@ -12,7 +12,7 @@ export const ProfileModal = forwardRef<modalRefScheme, ProfileModalScheme>(
   ({ user }, ref) => {
     const meUser = useUserStore((state) => state.user);
 
-    const isMe = user?.id === meUser?.id;
+    const isMe = user?._id === meUser?._id;
     
     return (
       <Modal ref={ref}>

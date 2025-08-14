@@ -4,7 +4,7 @@ export type userInfo = {
   email: string;
   login: string;
   role: string;
-  id: string;
+  _id: string;
   profilePicture?: string;
   description?: string;
 };

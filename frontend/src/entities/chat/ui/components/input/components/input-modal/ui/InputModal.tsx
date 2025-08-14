@@ -20,7 +20,12 @@ export const InputModal = forwardRef<modalRefScheme, InputModalScheme>(
       <Modal ref={ref}>
         <main className="bg-[#242526] px-[20px] py-[20px]">
           <img src={picture} className="max-h-[300px]" />
-          <CaptionField caption={caption} handleCaption={handleCaption} />
+          <CaptionField
+            picture={picture}
+            caption={caption}
+            handleCaption={handleCaption}
+            handleSendMessage={handleSendMessage}
+          />
           <ActionButtons
             onCloseModal={onCloseModal}
             handleSendMessage={handleSendMessage}

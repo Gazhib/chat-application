@@ -28,7 +28,7 @@ export const useUser = () => {
           isVerified,
           login,
           role,
-          id,
+          _id,
           description,
           profilePicture,
         } = await response.json();
@@ -36,7 +36,7 @@ export const useUser = () => {
           navigate(`/verify?email=${email}`);
         }
         if (isVerified) {
-          setUser({ email, login, role, id, description, profilePicture });
+          setUser({ email, login, role, _id, description, profilePicture });
         }
       }
     } catch (e) {
@@ -58,12 +58,12 @@ export const useUser = () => {
         isVerified,
         login,
         role,
-        id,
+        _id,
         description,
         profilePicture,
       } = await refreshResponse.json();
       if (isVerified) {
-        setUser({ email, login, role, id, description, profilePicture });
+        setUser({ email, login, role, _id, description, profilePicture });
       }
     } else {
       setUser(undefined);
@@ -82,7 +82,7 @@ export const useUser = () => {
       headers: {
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({ userId: user?.id, description: typed }),
+      body: JSON.stringify({ userId: user?._id, description: typed }),
     });
 
     if (!response.ok) {

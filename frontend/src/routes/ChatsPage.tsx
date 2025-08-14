@@ -7,7 +7,7 @@ import ChatSidebar from "@/entities/chat/ui/components/sidebar/ui/ChatSidebar";
 
 export default function ChatsPage() {
   const user = useUserStore((state) => state.user);
-  usePersonalSocket({ id: user?.id ?? "" });
+  usePersonalSocket({ id: user?._id ?? "" });
 
   const generateKeyPairs = useKeyStore((state) => state?.getKeyPairs);
 
@@ -16,7 +16,7 @@ export default function ChatsPage() {
       generateKeyPairs();
     }
     genKeyPairs();
-  }, [user?.id]);
+  }, [user?._id]);
 
   return (
     <main className="ml-[50px] h-screen bg-[#18191A] w-[calc(100%-50px)] flex flex-row">

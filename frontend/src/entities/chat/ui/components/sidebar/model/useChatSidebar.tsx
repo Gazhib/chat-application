@@ -8,7 +8,7 @@ import { port } from "@/util/ui/ProtectedRoutes";
 import { useKeyStore } from "@/util/model/store/zustand";
 import { getSharedKey } from "@/entities/chat/model/encryption";
 import { decryptMessage } from "@/entities/chat/model/decryption";
-
+import { ObjectId } from "bson";
 export interface User extends userInfo {
   lastMessage: MessageSchema;
   chatId: string;
@@ -34,7 +34,7 @@ export const useChatSidebar = () => {
   const setUsers = usersStore((state) => state.setUsers);
 
   const { data, isLoading } = useQuery({
-    queryKey: ["chats"],
+    queryKey: ["chats", user?._id],
     queryFn: async (): Promise<User[]> => {
       const response = await fetch(`${port}/users`, {
         method: "GET",
@@ -44,6 +44,7 @@ export const useChatSidebar = () => {
 
       if (!response.ok) return [];
       setUsers(responseData);
+      console.log(responseData);
       return responseData;
     },
     staleTime: Infinity,
@@ -51,9 +52,22 @@ export const useChatSidebar = () => {
 
   const navigate = useNavigate();
 
-  const openChat = async (chatId: string) => {
+  const openChat = async (chatId: string, companionId: string) => {
     setTyped("");
-    navigate(`/chats/${chatId}`);
+    let finalChatId = chatId;
+    console.log(user?._id, companionId);
+    if (!chatId) {
+      const response = await fetch(`http://localhost:3000/chats`, {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ companionId }),
+      });
+
+      const chat = await response.json();
+      finalChatId = chat._id;
+    }
+    navigate(`/chats/${finalChatId}`);
   };
 
   const { data: searchResults, isLoading: isSearchResultsLoading } = useQuery({
@@ -85,12 +99,11 @@ export const useChatSidebar = () => {
     const handle = async () => {
       const updatedUsers = data.map(async (curUser) => {
         const { lastMessage } = curUser;
-
         const { chatId, cipher } = lastMessage;
 
         const newSharedKey = await getSharedKey(
           chatId,
-          user?.id ?? "",
+          user?._id ?? "",
           keyPairs!.privateKey
         );
 

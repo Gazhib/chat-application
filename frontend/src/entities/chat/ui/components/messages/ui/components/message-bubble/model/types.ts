@@ -1,7 +1,7 @@
 export type MessageSchema = {
   chatId: string;
   senderId: string;
-  createdAt: string;
+  createdAt: string | Date;
   seq: Number;
   messageType: string;
   status: {
@@ -13,6 +13,6 @@ export type MessageSchema = {
     data: string;
   };
   meta: string;
-  _id: string;
+  _id?: string;
   picture?: string;
 };
