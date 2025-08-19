@@ -9,11 +9,16 @@ export default function ProfileButton({
   user: { profilePicture?: string; login?: string };
   pp: string;
 }) {
+  console.log(user);
   return (
     <SidebarElement onClick={handleProfile}>
       <img
         className="rounded-full w-[50px] h-[50px] object-cover"
-        src={user?.profilePicture === "Empty" ? pp : user?.profilePicture}
+        src={
+          user?.profilePicture === "Empty" || !user.profilePicture
+            ? pp
+            : user?.profilePicture
+        }
       />
       <div className="absolute w-[10px] h-[10px] bg-green-600 rounded-full left-[55px] bottom-[5px]" />
       <span className="text-[18px]">{user?.login}</span>

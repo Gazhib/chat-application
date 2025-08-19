@@ -1,6 +1,6 @@
 import { useEffect, useRef } from "react";
 import { useContextMenu } from "../model/useContextMenu";
-import type { MessageSchema } from "../../../model/types";
+import type { MessageSchema } from "../../../../model/types";
 
 export default function ContextMenu({
   handleClickAway,

@@ -56,11 +56,12 @@ const hashPassword = async (password) => {
 };
 
 const createAccessToken = (payload, res) => {
-  const accessToken = jwt.sign(payload, accessSecretKey, { expiresIn: "15m" });
+  const accessToken = jwt.sign(payload, accessSecretKey, { expiresIn: "1h" });
   res.cookie("accessToken", accessToken, {
     httpOnly: true,
     secure: true,
-    sameSite: "strict",
+    sameSite: "lax",
+    path: "/",
     maxAge: 3600000,
   });
 };
@@ -70,7 +71,8 @@ const createRefreshToken = (payload, res) => {
   res.cookie("refreshToken", refreshToken, {
     httpOnly: true,
     secure: true,
-    sameSite: "strict",
+    sameSite: "lax",
+    path: "/",
     maxAge: 3600000,
   });
 };
@@ -262,13 +264,15 @@ app.get("/api/logout", async (req, res) => {
   res.clearCookie("refreshToken", {
     httpOnly: true,
     secure: true,
-    sameSite: "strict",
+    sameSite: "lax",
+    path: "/",
     maxAge: 3600000,
   });
   res.clearCookie("accessToken", {
     httpOnly: true,
     secure: true,
-    sameSite: "strict",
+    sameSite: "lax",
+    path: "/",
     maxAge: 3600000,
   });
   res.status(200).json("Logged out");

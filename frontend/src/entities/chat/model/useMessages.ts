@@ -8,14 +8,16 @@ import { decryptMessage } from "./decryption";
 import { socket } from "@util/model/socket/socket";
 import { useMessageStore } from "./messageZustand";
 import { useUserStore, type userInfo } from "@entities/user/model/userZustand";
-import type { MessageSchema } from "../ui/components/messages/ui/components/message-bubble/model/types";
-import { usersStore } from "../ui/components/sidebar/model/useChatSidebar";
+import type { MessageSchema } from "@/entities/messages/ui/message-bubble/model/types";
+import { usersStore } from "@/entities/user-list/model/useChatSidebar";
 
 type sendMessageSchema = {
   typed: string;
   chatId: string;
   sharedKey?: CryptoKey;
   picture: string | undefined;
+  type?: string;
+  roomId?: string;
 };
 
 type chatData = {
@@ -81,11 +83,7 @@ export const useMessages = ({ chatId }: hookScheme) => {
     setMessages([]);
     async function handle() {
       if (chatId && user?._id && keyPairs) {
-        const newSharedKey = await getSharedKey(
-          chatId,
-          user._id,
-          keyPairs.privateKey
-        );
+        const newSharedKey = await getSharedKey(chatId, keyPairs.privateKey);
 
         changeSharedKey(newSharedKey);
         setSharedKey(newSharedKey);
@@ -156,8 +154,18 @@ export const useMessages = ({ chatId }: hookScheme) => {
     setMessages([...messages, newMessage]);
   };
 
-  const sendMessage = async ({ typed, chatId, picture }: sendMessageSchema) => {
-    if ((typed.trim() === "" && picture === undefined) || !sharedKey) return;
+  const sendMessage = async ({
+    typed,
+    chatId,
+    picture,
+    type,
+    roomId,
+  }: sendMessageSchema) => {
+    if (
+      (typed.trim() === "" && picture === undefined && roomId?.trim() === "") ||
+      !sharedKey
+    )
+      return;
     const formData = new FormData();
     if (picture) {
       const blob = await fetch(picture).then((r) => r.blob());
@@ -177,6 +185,14 @@ export const useMessages = ({ chatId }: hookScheme) => {
         data,
       },
       picture,
+      messageType: type
+        ? type
+        : picture && typed
+        ? "mix"
+        : picture
+        ? "picture"
+        : "txt",
+      roomId,
     };
     const createdAt = new Date();
     const msg = {
@@ -184,14 +200,17 @@ export const useMessages = ({ chatId }: hookScheme) => {
       senderId: user?._id ?? "",
       createdAt,
       seq: 0,
-      messageType: picture && typed ? "mix" : picture ? "picture" : "txt",
       meta: typed,
       status: {
         delievered: 0,
         read: 0,
       },
+      cipher: {
+        iv,
+        data,
+      },
+      roomId,
     };
-
     handleMessage(msg);
 
     const updatedUsers = users.map((u) =>
@@ -200,6 +219,7 @@ export const useMessages = ({ chatId }: hookScheme) => {
     setUsers(updatedUsers);
 
     formData.append("message", JSON.stringify(message));
+    if (type === "call") formData.append("type", type);
 
     const response = await fetch(`${port}/messages`, {
       method: "POST",
@@ -207,7 +227,7 @@ export const useMessages = ({ chatId }: hookScheme) => {
       credentials: "include",
     });
     if (!response.ok) {
-      console.log("something went wrong");
+      console.log(await response.json());
       return;
     }
 

@@ -1,13 +1,12 @@
-import { useEffect, useRef } from "react";
-import type { MessageSchema } from "./components/message-bubble/model/types";
+import type { MessageSchema } from "./message-bubble/model/types";
 import type { userInfo } from "@/entities/user/model/userZustand";
-import MessageBubble from "./components/message-bubble/ui/MessageBubble";
+import MessageBubble from "./message-bubble/ui/MessageBubble";
 import LoadingSpinner from "@/shared/spinner/ui/LoadingSpinner";
 
 interface Messages {
   isLoading: boolean;
   messages: MessageSchema[];
-  myId?: string;
+  userId?: string;
   companion: userInfo;
   setCurrentUserModal?: (value: string) => void;
 }
@@ -15,17 +14,11 @@ interface Messages {
 export default function Messages({
   isLoading,
   messages,
-  myId = "",
+  userId = "",
   companion,
   setCurrentUserModal,
 }: Messages) {
-  const bottomRef = useRef<HTMLDivElement>(null);
 
-  useEffect(() => {
-    if (bottomRef.current) {
-      bottomRef.current.scrollIntoView({ behavior: "smooth" });
-    }
-  }, [messages]);
 
 
   return (
@@ -40,7 +33,7 @@ export default function Messages({
               messageId={message._id!}
               key={`${message.createdAt}-${message.meta}-${index}`}
               message={message}
-              place={message.senderId !== myId ? "left" : "right"}
+              place={message.senderId !== userId ? "left" : "right"}
               companion={companion}
             />
           );
@@ -48,7 +41,6 @@ export default function Messages({
       ) : (
         <LoadingSpinner />
       )}
-      <div ref={bottomRef} />
     </>
   );
 }

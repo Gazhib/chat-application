@@ -3,7 +3,7 @@ import { useEffect } from "react";
 import { usePersonalSocket } from "@/util/model/socket/usePersonalSocket";
 import { useUserStore } from "@/entities/user/model/userZustand";
 import { useKeyStore } from "@/util/model/store/zustand";
-import ChatSidebar from "@/entities/chat/ui/components/sidebar/ui/ChatSidebar";
+import ChatSidebar from "@/entities/user-list/ui/ChatSidebar";
 
 export default function ChatsPage() {
   const user = useUserStore((state) => state.user);

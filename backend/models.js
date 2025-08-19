@@ -27,6 +27,14 @@ const messageSchema = new Schema({
     data: String,
   },
   picture: String,
+  finishedAt: {
+    type: Date,
+    required: false,
+  },
+  roomId: {
+    type: String,
+    required: false,
+  },
 });
 
 const deviceSchema = new Schema({
@@ -144,16 +152,38 @@ const userSchema = new Schema({
   verifyCodeExpires: Date,
 });
 
+const callRoomSchema = new Schema({
+  membershipIds: [
+    {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "memberships",
+    },
+  ],
+  creatorId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "users",
+  },
+  createdAt: {
+    type: Date,
+    default: new Date(),
+  },
+  roomId: {
+    type: String,
+    required: true,
+  },
+});
+
 const userModel = mongoose.model("user", userSchema);
 const deviceModel = mongoose.model("device", deviceSchema);
 const chatModel = mongoose.model("chat", chatSchema);
 const membershipModel = mongoose.model("membership", membershipSchema);
 const messageModel = mongoose.model("message", messageSchema);
-
+const callRoomModel = mongoose.model("call", callRoomSchema);
 module.exports = {
   userModel,
   deviceModel,
   chatModel,
   membershipModel,
   messageModel,
+  callRoomModel,
 };

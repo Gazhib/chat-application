@@ -149,20 +149,17 @@ export async function getKeyPair(): Promise<{
   });
 }
 
-export async function getSharedKey(
-  chatId: string,
-  myId: string,
-  privateKey: CryptoKey
-) {
+export async function getSharedKey(chatId: string, privateKey: CryptoKey) {
   const response = await fetch(`${port}/peer-public-key`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
     },
-    body: JSON.stringify({ chatId, myId }),
+    body: JSON.stringify({ chatId }),
     credentials: "include",
   });
   const responseData = await response.json();
+
   const rawPeerKey = Buffer.from(responseData.publicKey, "base64");
   const peerPublicKey = await crypto.subtle.importKey(
     "raw",
