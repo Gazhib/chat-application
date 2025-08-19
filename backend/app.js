@@ -7,11 +7,16 @@ const app = express();
 const multer = require("multer");
 const http = require("http");
 const { initSocket } = require("./socket");
-const { messageModel, chatModel, userModel } = require("./models");
+const {
+  messageModel,
+  chatModel,
+  userModel,
+  callRoomModel,
+} = require("./models");
 const { default: mongoose } = require("mongoose");
 require("dotenv").config({ path: "../.env" });
 const { getPicture, putPicture } = require("./bucket");
-const { unescape } = require("querystring");
+const { callDisconnect } = require("./call");
 
 app.use(
   cors({
@@ -62,24 +67,30 @@ const tokenMiddleware = (req, res, next) => {
 
 const server = http.createServer(app);
 
-initSocket(server);
+const io = initSocket(server);
 
 app.post(
   "/messages",
   tokenMiddleware,
   upload.single("image"),
   async (req, res) => {
-    const { message } = req.body;
+    const { message, type } = req.body;
     const { chatId, cipher, picture } = JSON.parse(message);
     const senderId = req.userPayload.sub;
-
-    const messageType = picture && cipher ? "mix" : picture ? "picture" : "txt";
+    let messageType =
+      type === "call"
+        ? type
+        : picture && cipher
+        ? "mix"
+        : picture
+        ? "picture"
+        : "txt";
     const chat = await chatModel.findOne({
       _id: chatId,
       membershipIds: senderId,
     });
 
-    if (messageType !== "txt" && !req.file) {
+    if (messageType !== "txt" && !req.file && messageType !== "call") {
       return res.status(400).json("Write a text or have a picture");
     }
 
@@ -94,6 +105,8 @@ app.post(
       await putPicture({ file, imageName });
       url = await getPicture({ imageName });
     }
+
+    const q = { chatId };
 
     const newMessage = new messageModel({
       chatId,
@@ -112,19 +125,18 @@ app.post(
 );
 
 app.get("/users", tokenMiddleware, async (req, res) => {
-  const myId = req.userPayload?.sub;
-  const chats = await chatModel.find({ membershipIds: myId }).lean();
+  const userId = req.userPayload?.sub;
+  const chats = await chatModel.find({ membershipIds: userId }).lean();
   const userIds = chats.map((chat) =>
-    chat.membershipIds.find((id) => id.toString() !== myId.toString())
+    chat.membershipIds.find((id) => id.toString() !== userId.toString())
   );
   const chatIds = chats.map((chat) => chat._id);
 
   const chatIdByUser = new Map();
   for (const chat of chats) {
-    console.log(chat);
     const chatId = chat._id.toString();
     const companionId = chat.membershipIds
-      .find((id) => id.toString() !== myId.toString())
+      .find((id) => id.toString() !== userId.toString())
       .toString();
     chatIdByUser.set(companionId, chatId);
   }
@@ -152,32 +164,32 @@ app.get("/users", tokenMiddleware, async (req, res) => {
     .find({ _id: { $in: userIds } })
     .select("_id login profilePicture");
 
-  for (const user of users) {
-    const chatId = chatIdByUser.get(user._id.toString());
-    user.lastMessage = lastMessagesByChat.get(chatId);
-    if (
-      user.lastMessage &&
-      user.lastMessage.messageType !== "txt" &&
-      user.lastMessage.picture
-    ) {
-      user.lastMessage.picture = await getPicture({
-        imageName: user.lastMessage.picture,
-      });
-    }
-    if (user.profilePicture) {
-      const url = await getPicture({ imageName: user.profilePicture });
-      user.profilePicture = url;
-    }
-    user.chatId = chatIdByUser.get(user._id.toString());
-  }
-
-  console.log(users);
+  await Promise.all(
+    users.map(async (user) => {
+      const chatId = chatIdByUser.get(user._id.toString());
+      user.lastMessage = lastMessagesByChat.get(chatId);
+      if (
+        user.lastMessage &&
+        user.lastMessage.messageType !== "txt" &&
+        user.lastMessage.picture
+      ) {
+        user.lastMessage.picture = await getPicture({
+          imageName: user.lastMessage.picture,
+        });
+      }
+      if (user.profilePicture) {
+        const url = await getPicture({ imageName: user.profilePicture });
+        user.profilePicture = url;
+      }
+      user.chatId = chatIdByUser.get(user._id.toString());
+    })
+  );
 
   return res.status(200).json(users);
 });
 
 const escapeRegex = (str) => {
-  return str.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  return RegExp.escape(str);
 };
 
 app.post("/users/:userName", tokenMiddleware, async (req, res) => {
@@ -192,12 +204,14 @@ app.post("/users/:userName", tokenMiddleware, async (req, res) => {
     .lean()
     .select("_id login profilePicture");
 
-  for (const user of users) {
-    if (user.profilePicture) {
-      const url = await getPicture({ imageName: user.profilePicture });
-      user.profilePicture = url;
-    }
-  }
+  Promise.all(
+    users.map(async (user) => {
+      if (user.profilePicture) {
+        const url = await getPicture({ imageName: user.profilePicture });
+        user.profilePicture = url;
+      }
+    })
+  );
 
   return res.status(200).json(users);
 });
@@ -207,12 +221,12 @@ const clamp = (value, min, max) => {
 };
 
 app.post("/chats", tokenMiddleware, async (req, res) => {
-  const myId = req.userPayload.sub;
+  const userId = req.userPayload.sub;
   const { companionId } = req.body;
 
   const newChat = new chatModel({
-    membershipIds: [myId, companionId],
-    creatorId: myId,
+    membershipIds: [userId, companionId],
+    creatorId: userId,
     chatType: "DIRECT",
   });
   await newChat.save();
@@ -221,15 +235,18 @@ app.post("/chats", tokenMiddleware, async (req, res) => {
 
 app.get("/chats/:chatId/messages", tokenMiddleware, async (req, res) => {
   const { chatId } = req.params;
-  const myId = req.userPayload.sub;
+  const userId = req.userPayload.sub;
   try {
     const limit = clamp(req.query.limit, 1, 100);
     const cursor = req.query.beforeId;
 
-    const chat = await chatModel.findOne({ membershipIds: myId });
+    const chat = await chatModel.findOne({
+      membershipIds: userId,
+      _id: chatId,
+    });
     if (!chat) return res.status(403).json("Not your chat");
     const companionId = chat.membershipIds.find(
-      (id) => id.toString() !== myId.toString()
+      (id) => id.toString() !== userId.toString()
     );
     const companion = await userModel.findById(companionId);
 
@@ -246,12 +263,28 @@ app.get("/chats/:chatId/messages", tokenMiddleware, async (req, res) => {
       ? messages[messages.length - 1]._id
       : null;
 
-    for (const message of messages) {
-      if (message.messageType === "picture" || message.messageType === "mix") {
-        const url = await getPicture({ imageName: message.picture });
-        message.picture = url;
-      }
-    }
+    console.time("With Promise");
+    await Promise.all(
+      messages.map(async (message) => {
+        if (
+          message.messageType === "picture" ||
+          message.messageType === "mix"
+        ) {
+          message.picture = await getPicture({ imageName: message.picture });
+        }
+      })
+    );
+    console.timeEnd("With Promise");
+
+    // console.time("Without Promise")
+    // for (const message of messages) {
+    //   if (message.messageType === "picture" || message.messageType === "mix") {
+    //     const url = await getPicture({ imageName: message.picture });
+    //     message.picture = url;
+    //   }
+    // }
+    // console.timeEnd("Without Promise")
+
     if (companion.profilePicture) {
       const url = await getPicture({ imageName: companion.profilePicture });
       companion.profilePicture = url;
@@ -281,8 +314,8 @@ app.post("/public-key", tokenMiddleware, async (req, res) => {
 
 app.post("/peer-public-key", tokenMiddleware, async (req, res) => {
   const { chatId } = req.body;
-  const myId = req.userPayload.sub;
-  const chat = await chatModel.findOne({ _id: chatId, membershipIds: myId });
+  const userId = req.userPayload.sub;
+  const chat = await chatModel.findOne({ _id: chatId, membershipIds: userId });
   if (!chat) {
     return res
       .status(400)
@@ -291,15 +324,16 @@ app.post("/peer-public-key", tokenMiddleware, async (req, res) => {
 
   const membershipIds = chat.membershipIds;
 
-  const userId = membershipIds.find((id) => id.toString() !== myId.toString());
-  const user = await userModel.findById(userId);
-  if (!user || !user.publicKey) {
+  const companionId = membershipIds.find(
+    (id) => id.toString() !== userId.toString()
+  );
+  const companion = await userModel.findById(companionId);
+  if (!companion || !companion.publicKey) {
     return res
       .status(400)
       .json("Something went wrong... Could not find the user");
   }
-
-  return res.status(200).json({ publicKey: user.publicKey });
+  return res.status(200).json({ publicKey: companion.publicKey });
 });
 
 app.delete("/messages/:messageId", tokenMiddleware, async (req, res) => {
@@ -313,7 +347,8 @@ app.delete("/messages/:messageId", tokenMiddleware, async (req, res) => {
 });
 
 app.patch("/user-description", tokenMiddleware, async (req, res) => {
-  const { userId, description } = req.body;
+  const { description } = req.body;
+  const userId = req.userPayload.sub;
   const user = await userModel.findById(userId);
   if (!user) {
     return res.status(400).json("Could not find user");
@@ -334,7 +369,7 @@ app.patch(
   tokenMiddleware,
   upload.single("image"),
   async (req, res) => {
-    const { userId } = req.body;
+    const userId = req.userPayload.sub;
     const file = req.file;
     const imageName = randomImageName();
 
@@ -353,6 +388,62 @@ app.patch(
     return res.status(200).json({ profilePicture: url });
   }
 );
+
+app.post("/calls", tokenMiddleware, async (req, res) => {
+  const userId = req.userPayload.sub;
+  const { companionId } = req.body;
+  let roomId = crypto.randomUUID();
+
+  if (await callRoomModel.exists({ membershipIds: userId })) {
+    return res.status(403).json("You are already in call");
+  }
+
+  if (await callRoomModel.exists({ membershipIds: companionId })) {
+    return res.status(403).json("User is already in call");
+  }
+
+  while (await callRoomModel.exists({ roomId })) {
+    roomId = crypto.randomUUID();
+  }
+
+  const callRoom = new callRoomModel({
+    membershipIds: [userId, companionId],
+    creatorId: userId,
+    roomId,
+  });
+
+  await callRoom.save();
+
+  return res.status(200).json({ roomId });
+});
+
+app.get("/calls/:callId", tokenMiddleware, async (req, res) => {
+  const { callId } = req.params;
+
+  const userId = req.userPayload.sub;
+
+  const call = await callRoomModel.findOne({
+    roomId: callId,
+    membershipIds: userId,
+  });
+
+  if (!call) {
+    return res
+      .status(403)
+      .json("Call does not exist, or you are not a member of the call");
+  }
+
+  return res.status(200).json("Ok");
+});
+
+
+app.delete("/calls/:callId", tokenMiddleware, async (req, res) => {
+  const { callId } = req.params;
+
+  const userId = req.userPayload.sub;
+
+  await callDisconnect(callId, userId);
+});
 
 app.get("/me", tokenMiddleware, async (req, res) => {
   const { login, role, email, sub } = req.userPayload || {};
@@ -379,6 +470,8 @@ app.get("/me", tokenMiddleware, async (req, res) => {
     profilePicture: url,
   });
 });
+
+
 
 const port = process.env.DF_PORT;
 

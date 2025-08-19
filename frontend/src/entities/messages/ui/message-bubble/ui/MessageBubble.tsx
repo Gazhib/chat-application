@@ -42,7 +42,6 @@ export default function MessageBubble({
     photoModalRef.current?.openModal();
   };
 
-
   return (
     <div
       className={`max-w-[65%] flex ${
@@ -76,7 +75,11 @@ export default function MessageBubble({
           </div>
         )}
         {message.messageType === "call" ? (
-          <CallMessage time={time} callId={message.meta} />
+          <CallMessage
+            time={time}
+            callId={message.meta}
+            finishedAt={message.finishedAt}
+          />
         ) : (
           <Meta
             time={time}

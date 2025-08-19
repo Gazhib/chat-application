@@ -82,7 +82,7 @@ export const useUser = () => {
       headers: {
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({ userId: user?._id, description: typed }),
+      body: JSON.stringify({ description: typed }),
     });
 
     if (!response.ok) {

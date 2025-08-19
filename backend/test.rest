@@ -2,5 +2,5 @@ POST http://localhost:3000/users
 Content-Type: application/json
 
 {
-  "myId": "6894b48dde2e68c0eeed7c2a"
+  "userId": "6894b48dde2e68c0eeed7c2a"
 }

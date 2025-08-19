@@ -33,7 +33,6 @@ export default function UserInfo({
         const formData = new FormData();
 
         formData.append("image", newFile);
-        formData.append("userId", user?._id || "");
 
         const response = await fetch(`${port}/profile-picture`, {
           method: "PATCH",
@@ -84,7 +83,11 @@ export default function UserInfo({
             <img
               onMouseEnter={() => setIsHovering(true)}
               onMouseLeave={() => setIsHovering(false)}
-              src={user?.profilePicture === "Empty" ? pp : user?.profilePicture}
+              src={
+                user?.profilePicture === "Empty" || !user?.profilePicture
+                  ? pp
+                  : user?.profilePicture
+              }
               className="absolute w-[50px] h-[50px] rounded-full object-cover"
             />
             {isHovering && isMe && (

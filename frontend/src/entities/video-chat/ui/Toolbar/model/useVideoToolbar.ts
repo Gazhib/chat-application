@@ -1,8 +1,13 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useCallStore } from "../../../model/callZustand";
 import { socket } from "@/util/model/socket/socket";
+import { useNavigate, useParams } from "react-router";
+import { port } from "@/util/ui/ProtectedRoutes";
 
 export const useVideoToolbar = () => {
+  const { callId } = useParams();
+  const navigate = useNavigate();
+
   const isAudio = useCallStore((state) => state.isAudio);
   const isVideo = useCallStore((state) => state.isVideo);
   const [isSharing, setIsSharing] = useState(false);
@@ -16,6 +21,16 @@ export const useVideoToolbar = () => {
   const senders = useCallStore((state) => state.senders);
 
   const screenTrack = useRef<MediaStreamTrack>(null);
+
+  useEffect(() => {
+    const handler = async () => {
+      const response = await fetch(`${port}/calls/${callId}`, {
+        credentials: "include",
+      });
+      if (!response.ok) navigate("/chats");
+    };
+    handler();
+  }, [callId]);
 
   const toggleAudio = () => {
     setIsAudio(!isAudio);
@@ -71,10 +86,22 @@ export const useVideoToolbar = () => {
     if (userStream.current) {
       userStream.current.getTracks().forEach((track) => track.stop());
     }
-    
+
     senders.current = [];
     setIsFinished(true);
+    // const response = await fetch(`${port}/calls/${callId}`, {
+    //   method: "DELETE",
+    //   credentials: "include",
+    // });
+
+    // if (!response.ok) {
+    //   console.error(await response.json());
+    //   return;
+    // }
+
     socket.emit("hangUp");
+    navigate("/chats");
+
   };
 
   return {

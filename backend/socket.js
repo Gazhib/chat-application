@@ -2,6 +2,7 @@ import { Server } from "socket.io";
 import * as cookie from "cookie";
 import jwt from "jsonwebtoken";
 import dotenv from "dotenv";
+import { callDisconnect } from "./call.js";
 
 dotenv.config({ path: "../.env" });
 const accessSecretKey = process.env.ACCESS_SECRET;
@@ -90,13 +91,12 @@ export function initSocket(httpServer) {
 
     // add to a database soon
     socket.on("call", (callId) => {
-      console.log(callId);
+      console.log("rooms: ", rooms);
       if (rooms[callId]) {
         if (!rooms[callId].includes(socket.id)) rooms[callId].push(socket.id);
       } else {
         rooms[callId] = [socket.id];
       }
-      console.log(rooms);
       const otherUser = rooms[callId].find((id) => id !== socket.id);
       userCallRoom = callId;
       if (otherUser) {
@@ -125,7 +125,7 @@ export function initSocket(httpServer) {
       }
     });
 
-    socket.on("disconnect", (reason) => {
+    socket.on("disconnect", async (reason) => {
       delete onlineUsers[userId];
       if (userCallRoom) {
         if (rooms[userCallRoom]) {
@@ -133,10 +133,13 @@ export function initSocket(httpServer) {
             (id) => id !== socket.id
           );
           delete rooms[userCallRoom];
+
+          await callDisconnect(userCallRoom, userId);
           io.to(companionId).emit("userLeft");
         }
       }
-      console.log(rooms);
+      console.log("disconnected:", rooms);
+
       io.emit("onlineList", { onlineUsersIds: Object.keys(onlineUsers) });
     });
   });

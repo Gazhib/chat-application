@@ -15,4 +15,6 @@ export type MessageSchema = {
   meta: string;
   _id?: string;
   picture?: string;
+  finishedAt?: string | Date;
+  roomId?: string;
 };

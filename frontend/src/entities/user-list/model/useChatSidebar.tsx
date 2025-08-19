@@ -3,12 +3,11 @@ import { useNavigate } from "react-router";
 import { useEffect, useState } from "react";
 import { create } from "zustand";
 import { useUserStore, type userInfo } from "@/entities/user/model/userZustand";
-import type { MessageSchema } from "../../messages/ui/components/message-bubble/model/types";
+import type { MessageSchema } from "../../messages/ui/message-bubble/model/types";
 import { port } from "@/util/ui/ProtectedRoutes";
 import { useKeyStore } from "@/util/model/store/zustand";
 import { getSharedKey } from "@/entities/chat/model/encryption";
 import { decryptMessage } from "@/entities/chat/model/decryption";
-import { ObjectId } from "bson";
 export interface User extends userInfo {
   lastMessage: MessageSchema;
   chatId: string;
@@ -44,7 +43,6 @@ export const useChatSidebar = () => {
 
       if (!response.ok) return [];
       setUsers(responseData);
-      console.log(responseData);
       return responseData;
     },
     staleTime: Infinity,
@@ -55,7 +53,6 @@ export const useChatSidebar = () => {
   const openChat = async (chatId: string, companionId: string) => {
     setTyped("");
     let finalChatId = chatId;
-    console.log(user?._id, companionId);
     if (!chatId) {
       const response = await fetch(`http://localhost:3000/chats`, {
         method: "POST",
@@ -103,7 +100,6 @@ export const useChatSidebar = () => {
 
         const newSharedKey = await getSharedKey(
           chatId,
-          user?._id ?? "",
           keyPairs!.privateKey
         );
 

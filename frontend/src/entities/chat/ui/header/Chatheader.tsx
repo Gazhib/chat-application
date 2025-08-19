@@ -4,16 +4,16 @@ import type { userInfo } from "@entities/user/model/userZustand";
 import { useChatHeader } from "./model/useChatHeader";
 type Props = {
   companionInfo: userInfo;
-  myId: string;
+  userId: string;
 };
 
-export default function ChatHeader({ myId, companionInfo }: Props) {
+export default function ChatHeader({ userId, companionInfo }: Props) {
   const [status, setStatus] = useState({
     status: "Offline",
     lastSeen: "Long time ago",
   });
 
-  const { onlineUsers } = usePersonalSocket({ id: myId });
+  const { onlineUsers } = usePersonalSocket({ id: userId });
 
   const { handleCall } = useChatHeader();
 

@@ -11,7 +11,8 @@ import VerificationPage, {
 import RootLayout from "./RootLayout";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import CurrentPage from "./CurrentPage";
-import VideoChat from "./routes/VideoChat";
+import VideoChat, { loader as videoPageLoader } from "./routes/VideoChat";
+import ErrorPage from "./error/ui/ErrorPage";
 
 function App() {
   const client = new QueryClient();
@@ -20,6 +21,7 @@ function App() {
     {
       path: "/",
       element: <RootLayout />,
+      errorElement: <ErrorPage />,
       children: [
         {
           element: <AuthRoutes />,
@@ -55,6 +57,7 @@ function App() {
                 {
                   path: "/call/:callId",
                   element: <VideoChat />,
+                  loader: videoPageLoader,
                 },
               ],
             },

@@ -23,9 +23,6 @@ export const useVideoChat = () => {
   const { stopShareScreen } = useVideoToolbar();
 
   const senders = useCallStore((state) => state.senders);
-  useEffect(() => {
-    console.log(senders.current);
-  }, [senders.current]);
 
   const { callId } = useParams();
 
@@ -162,9 +159,7 @@ export const useVideoChat = () => {
 
         socket.on("userLeft", async () => {
           await stopShareScreen();
-          if (userStream.current) {
-            userStream.current.getTracks().forEach((track) => track.stop());
-          }
+          userStream.current?.getTracks().forEach((track) => track.stop());
           senders.current = [];
           peerRef.current = null;
           setIsFinished(true);
@@ -176,6 +171,7 @@ export const useVideoChat = () => {
           socket.off("offer", handleReceiveCall);
           socket.off("answer", handleAnswer);
           socket.off("ice-candidate", handleNewICECandidateMsg);
+          userStream.current?.getTracks().forEach((track) => track.stop());
           peerRef.current?.close();
         };
       });
