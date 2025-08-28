@@ -3,6 +3,7 @@ import { useEffect, useRef } from "react";
 import { useParams } from "react-router";
 import { useCallStore } from "./callZustand";
 import { useVideoToolbar } from "../ui/Toolbar/model/useVideoToolbar";
+import { useMessageStore } from "@/entities/chat/model/messageZustand";
 type payload = {
   target: string | undefined;
   caller: string | undefined;
@@ -25,6 +26,9 @@ export const useVideoChat = () => {
   const senders = useCallStore((state) => state.senders);
 
   const { callId } = useParams();
+
+  const messages = useMessageStore((state) => state.messages);
+  const setMessages = useMessageStore((state) => state.setMessages);
 
   const handleNegotiationNeededEvent = (userId?: string) => {
     peerRef.current
@@ -162,6 +166,19 @@ export const useVideoChat = () => {
           userStream.current?.getTracks().forEach((track) => track.stop());
           senders.current = [];
           peerRef.current = null;
+          const updatedMessages = messages.map((msg) =>
+            msg.messageType !== "call"
+              ? msg
+              : msg.finishedAt
+              ? msg
+              : {
+                  ...msg,
+                  finishedAt: new Date().toLocaleTimeString().slice(0, 5),
+                }
+          );
+          console.log(updatedMessages);
+          setMessages(updatedMessages);
+          window.close();
           setIsFinished(true);
         });
 

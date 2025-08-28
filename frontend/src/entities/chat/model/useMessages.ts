@@ -3,7 +3,11 @@ import { port } from "@util/ui/ProtectedRoutes";
 import { encryptMessage, getSharedKey } from "./encryption";
 import { useNavigate } from "react-router";
 import { useKeyStore } from "@util/model/store/zustand";
-import { useQuery } from "@tanstack/react-query";
+import {
+  useInfiniteQuery,
+  useQuery,
+  type InfiniteData,
+} from "@tanstack/react-query";
 import { decryptMessage } from "./decryption";
 import { socket } from "@util/model/socket/socket";
 import { useMessageStore } from "./messageZustand";
@@ -21,8 +25,9 @@ type sendMessageSchema = {
 };
 
 type chatData = {
-  initialMessages: MessageSchema[];
-  companion: userInfo;
+  messages: MessageSchema[];
+  hasMore: boolean;
+  nextCursor: string | null | undefined;
 };
 
 interface hookScheme {
@@ -32,6 +37,7 @@ interface hookScheme {
 export const useMessages = ({ chatId }: hookScheme) => {
   const messages = useMessageStore((state) => state.messages);
   const setMessages = useMessageStore((state) => state.setMessages);
+  const addMessages = useMessageStore((state) => state.addMessages);
 
   const user = useUserStore((state) => state.user);
   const users = usersStore((state) => state.users);
@@ -39,28 +45,16 @@ export const useMessages = ({ chatId }: hookScheme) => {
   const keyPairs = useKeyStore((state) => state?.keyPairs);
   const changeSharedKey = useKeyStore((state) => state.changeSharedKey);
   const [sharedKey, setSharedKey] = useState<CryptoKey>();
+
   const setCompanionId = useUserStore((state) => state.setCompanionId);
 
   const navigate = useNavigate();
 
-  const {
-    data: { initialMessages, companion } = {
-      initialMessages: [],
-      companion: {
-        _id: "",
-        login: "",
-        profilePicture: "",
-        role: "",
-        email: "",
-        description: "",
-      },
-    },
-    isLoading,
-  } = useQuery({
-    queryKey: [chatId],
-    queryFn: async (): Promise<chatData> => {
-      const chatResponse = await fetch(
-        `${port}/chats/${chatId}/messages?limit=30`,
+  const { data: { companion } = {} } = useQuery({
+    queryKey: [chatId, "companion"],
+    queryFn: async (): Promise<{ companion: userInfo }> => {
+      const companionResponse = await fetch(
+        `${port}/chats/${chatId}/companion`,
         {
           method: "GET",
           headers: {
@@ -69,47 +63,92 @@ export const useMessages = ({ chatId }: hookScheme) => {
           credentials: "include",
         }
       );
-      if (!chatResponse.ok) navigate("/auth?mode=login");
+      if (!companionResponse.ok) navigate("/auth?mode=login");
 
-      const { nextCursor, messages, companion } = await chatResponse.json();
+      const { companion } = await companionResponse.json();
 
       setCompanionId(companion._id);
-      return { initialMessages: messages.reverse(), companion };
+      return {
+        companion,
+      };
     },
-    staleTime: Infinity,
   });
+
+  const { data, isLoading, fetchNextPage, isFetchingNextPage, hasNextPage } =
+    useInfiniteQuery<
+      chatData,
+      Error,
+      InfiniteData<chatData>,
+      [string, string],
+      { nextCursor: string | "" }
+    >({
+      initialPageParam: {
+        nextCursor: "",
+      },
+      queryKey: [chatId, "messages"],
+      queryFn: async ({ pageParam }): Promise<chatData> => {
+        const chatResponse = await fetch(
+          `${port}/chats/${chatId}/messages?limit=30&beforeId=${
+            pageParam.nextCursor || ""
+          }`,
+          {
+            method: "GET",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            credentials: "include",
+          }
+        );
+        if (!chatResponse.ok) navigate("/auth?mode=login");
+
+        const { nextCursor, messages, hasMore } = await chatResponse.json();
+
+        return {
+          messages: messages.reverse(),
+          hasMore,
+          nextCursor,
+        };
+      },
+      getNextPageParam: (lastPage) =>
+        lastPage.hasMore && lastPage.nextCursor
+          ? { nextCursor: lastPage.nextCursor }
+          : undefined,
+    });
 
   useEffect(() => {
     setMessages([]);
-    async function handle() {
-      if (chatId && user?._id && keyPairs) {
-        const newSharedKey = await getSharedKey(chatId, keyPairs.privateKey);
+  }, [chatId]);
 
-        changeSharedKey(newSharedKey);
-        setSharedKey(newSharedKey);
-        async function decryptMessages() {
-          if (initialMessages.length > 0 && newSharedKey) {
-            const decrypted = await Promise.all(
-              initialMessages.map(async (message: MessageSchema) => {
-                try {
-                  const newMessage = await decryptMessage(newSharedKey, {
-                    iv: message.cipher.iv,
-                    data: message.cipher.data,
-                  });
-                  return { ...message, meta: newMessage };
-                } catch (e) {
-                  console.log(e);
-                }
-              })
-            );
-            setMessages(decrypted as MessageSchema[]);
-          }
+  const handleDecrypting = async () => {
+    if (chatId && user?._id && keyPairs) {
+      const newSharedKey = await getSharedKey(chatId, keyPairs.privateKey);
+      const decryptedMessages =
+        data?.pages[data.pages.length - 1]?.messages || [];
+      changeSharedKey(newSharedKey);
+      setSharedKey(newSharedKey);
+      async function decryptMessages() {
+        if (decryptedMessages.length > 0 && newSharedKey) {
+          const decrypted = await Promise.all(
+            decryptedMessages.map(async (message: MessageSchema) => {
+              try {
+                const newMessage = await decryptMessage(newSharedKey, {
+                  iv: message.cipher.iv,
+                  data: message.cipher.data,
+                });
+                return { ...message, meta: newMessage };
+              } catch (e) {
+                console.log(e);
+              }
+            })
+          );
+          addMessages(
+            decrypted.filter((msg): msg is MessageSchema => msg !== undefined)
+          );
         }
-        decryptMessages();
       }
+      decryptMessages();
     }
-    handle();
-  }, [chatId, user, keyPairs, initialMessages && initialMessages.length]);
+  };
 
   useEffect(() => {
     const handler = async (msg: MessageSchema) => {
@@ -121,7 +160,7 @@ export const useMessages = ({ chatId }: hookScheme) => {
       msg.meta = newMessage;
       if (msg.senderId === user?._id) return;
       const updatedUsers = users.map((u) =>
-        u._id === companion._id ? { ...u, lastMessage: msg } : u
+        u._id === companion?._id ? { ...u, lastMessage: msg } : u
       );
       setUsers(updatedUsers);
       handleMessage(msg);
@@ -134,7 +173,7 @@ export const useMessages = ({ chatId }: hookScheme) => {
         .filter((msg): msg is MessageSchema => msg !== undefined)
         .filter((msg): msg is MessageSchema => messageId !== msg._id);
       const updatedUsers = users.map((u) =>
-        u._id === companion._id
+        u._id === companion?._id
           ? { ...u, lastMessage: updatedMessages[updatedMessages.length - 1] }
           : u
       );
@@ -214,7 +253,7 @@ export const useMessages = ({ chatId }: hookScheme) => {
     handleMessage(msg);
 
     const updatedUsers = users.map((u) =>
-      u._id === companion._id ? { ...u, lastMessage: msg } : u
+      u._id === companion?._id ? { ...u, lastMessage: msg } : u
     );
     setUsers(updatedUsers);
 
@@ -241,7 +280,12 @@ export const useMessages = ({ chatId }: hookScheme) => {
     sharedKey,
     messages,
     isLoading,
+    fetchNextPage,
     companion,
     handleMessage,
+    isFetchingNextPage,
+    hasNextPage,
+    handleDecrypting,
+    data,
   };
 };

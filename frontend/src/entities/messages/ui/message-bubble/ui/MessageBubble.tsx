@@ -16,6 +16,7 @@ type Props = {
   messageId: string;
   companion: userInfo;
   setCurrentUserModal?: (value: string) => void;
+  handleCall?: () => void;
 };
 export default function MessageBubble({
   message,
@@ -23,6 +24,7 @@ export default function MessageBubble({
   messageId,
   companion,
   setCurrentUserModal = () => {},
+  handleCall = () => {},
 }: Props) {
   const { isContextMenu, handleClick } = useContextMenu({ messageId });
   const time = new Date(message.createdAt).toLocaleTimeString().slice(0, 5);
@@ -76,6 +78,7 @@ export default function MessageBubble({
         )}
         {message.messageType === "call" ? (
           <CallMessage
+            handleCall={handleCall}
             time={time}
             callId={message.meta}
             finishedAt={message.finishedAt}
