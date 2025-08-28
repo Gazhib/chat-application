@@ -27,7 +27,7 @@ export default function Messages({
   }, [isLoading]);
 
   return (
-    <>
+    <main className="flex-1 w-full flex flex-col gap-[10px]">
       {isLoading && <LoadingSpinner />}
       {messages &&
         messages.map((message, index) => {
@@ -45,6 +45,6 @@ export default function Messages({
             />
           );
         })}
-    </>
+    </main>
   );
 }
