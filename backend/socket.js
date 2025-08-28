@@ -117,26 +117,24 @@ export function initSocket(httpServer) {
       io.to(incoming.target).emit("ice-candidate", incoming.candidate);
     });
 
-    socket.on("hangUp", () => {
+    socket.on("hangUp", async () => {
       if (userCallRoom && rooms[userCallRoom]) {
         const companionId = rooms[userCallRoom].find((id) => id !== socket.id);
         delete rooms[userCallRoom];
+        console.log("callDisconnect:", userCallRoom, userId);
+        await callDisconnect(userCallRoom, userId);
         io.to(companionId).emit("userLeft");
       }
     });
 
     socket.on("disconnect", async (reason) => {
       delete onlineUsers[userId];
-      if (userCallRoom) {
-        if (rooms[userCallRoom]) {
-          const companionId = rooms[userCallRoom].find(
-            (id) => id !== socket.id
-          );
-          delete rooms[userCallRoom];
-
-          await callDisconnect(userCallRoom, userId);
-          io.to(companionId).emit("userLeft");
-        }
+      if (userCallRoom && rooms[userCallRoom]) {
+        const companionId = rooms[userCallRoom].find((id) => id !== socket.id);
+        delete rooms[userCallRoom];
+        console.log("callDisconnect:", userCallRoom, userId);
+        await callDisconnect(userCallRoom, userId);
+        io.to(companionId).emit("userLeft");
       }
       console.log("disconnected:", rooms);
 

@@ -3,6 +3,7 @@ import { useCallStore } from "../../../model/callZustand";
 import { socket } from "@/util/model/socket/socket";
 import { useNavigate, useParams } from "react-router";
 import { port } from "@/util/ui/ProtectedRoutes";
+import { useMessageStore } from "@/entities/chat/model/messageZustand";
 
 export const useVideoToolbar = () => {
   const { callId } = useParams();
@@ -19,6 +20,9 @@ export const useVideoToolbar = () => {
 
   const userStream = useCallStore((state) => state.userStream);
   const senders = useCallStore((state) => state.senders);
+
+  const messages = useMessageStore((state) => state.messages);
+  const setMessages = useMessageStore((state) => state.setMessages);
 
   const screenTrack = useRef<MediaStreamTrack>(null);
 
@@ -89,19 +93,21 @@ export const useVideoToolbar = () => {
 
     senders.current = [];
     setIsFinished(true);
-    // const response = await fetch(`${port}/calls/${callId}`, {
-    //   method: "DELETE",
-    //   credentials: "include",
-    // });
+    const updatedMessages = messages.map((msg) =>
+      msg.messageType !== "call"
+        ? msg
+        : msg.finishedAt
+        ? msg
+        : {
+            ...msg,
+            finishedAt: new Date().toLocaleTimeString().slice(0, 5),
+          }
+    );
+    console.log(updatedMessages);
 
-    // if (!response.ok) {
-    //   console.error(await response.json());
-    //   return;
-    // }
-
+    setMessages(updatedMessages);
     socket.emit("hangUp");
-    navigate("/chats");
-
+    window.close();
   };
 
   return {

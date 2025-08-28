@@ -42,12 +42,11 @@ const accessSecretKey = process.env.ACCESS_SECRET;
 const refreshSecretKey = process.env.REFRESH_SECRET;
 const db = process.env.DB_CONNECTION;
 
-const connectDb = async () => {
+(async () => {
   await mongoose.connect(db);
-  console.log("Connected to db");
-};
 
-connectDb();
+  console.log("Connected to db");
+})();
 
 const hashPassword = async (password) => {
   const saltRounds = 15;

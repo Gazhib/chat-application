@@ -34,13 +34,11 @@ app.use(express.json({ limit: "1mb" }));
 const accessSecretKey = process.env.ACCESS_SECRET;
 const db = process.env.DB_CONNECTION;
 
-const connectDb = async () => {
+(async () => {
   await mongoose.connect(db);
 
   console.log("Connected to db");
-};
-
-connectDb();
+})();
 
 const MB = 1024 * 1024;
 const storage = multer.memoryStorage();
@@ -75,8 +73,9 @@ app.post(
   upload.single("image"),
   async (req, res) => {
     const { message, type } = req.body;
-    const { chatId, cipher, picture } = JSON.parse(message);
+    const { chatId, cipher, picture, roomId } = JSON.parse(message);
     const senderId = req.userPayload.sub;
+    console.log("req.body:", req.body);
     let messageType =
       type === "call"
         ? type
@@ -114,6 +113,7 @@ app.post(
       cipher,
       messageType: messageType,
       picture: messageType !== "txt" ? imageName : undefined,
+      roomId: type === "call" ? roomId : undefined,
     });
 
     await newMessage.save();
@@ -290,7 +290,33 @@ app.get("/chats/:chatId/messages", tokenMiddleware, async (req, res) => {
       companion.profilePicture = url;
     }
 
-    return res.status(200).json({ nextCursor, messages, companion });
+    const hasMore = messages.length === limit;
+
+    return res.status(200).json({ nextCursor, messages, hasMore });
+  } catch (e) {
+    return res.status(400).json(e || "Something went wrong...");
+  }
+});
+
+app.get("/chats/:chatId/companion", tokenMiddleware, async (req, res) => {
+  const { chatId } = req.params;
+  const userId = req.userPayload.sub;
+  try {
+    const chat = await chatModel.findOne({
+      membershipIds: userId,
+      _id: chatId,
+    });
+    const companionId = chat.membershipIds.find(
+      (id) => id.toString() !== userId.toString()
+    );
+    const companion = await userModel.findById(companionId);
+
+    if (companion.profilePicture) {
+      const url = await getPicture({ imageName: companion.profilePicture });
+      companion.profilePicture = url;
+    }
+
+    return res.status(200).json({ companion });
   } catch (e) {
     return res.status(400).json(e || "Something went wrong...");
   }
@@ -436,7 +462,6 @@ app.get("/calls/:callId", tokenMiddleware, async (req, res) => {
   return res.status(200).json("Ok");
 });
 
-
 app.delete("/calls/:callId", tokenMiddleware, async (req, res) => {
   const { callId } = req.params;
 
@@ -470,8 +495,6 @@ app.get("/me", tokenMiddleware, async (req, res) => {
     profilePicture: url,
   });
 });
-
-
 
 const port = process.env.DF_PORT;
 

@@ -14,8 +14,8 @@ import CurrentPage from "./CurrentPage";
 import VideoChat, { loader as videoPageLoader } from "./routes/VideoChat";
 import ErrorPage from "./error/ui/ErrorPage";
 
+export const queryClient = new QueryClient();
 function App() {
-  const client = new QueryClient();
 
   const router = createBrowserRouter([
     {
@@ -67,7 +67,7 @@ function App() {
     },
   ]);
   return (
-    <QueryClientProvider client={client}>
+    <QueryClientProvider client={queryClient}>
       <RouterProvider router={router} />{" "}
     </QueryClientProvider>
   );

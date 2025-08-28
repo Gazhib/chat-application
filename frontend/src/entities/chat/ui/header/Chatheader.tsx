@@ -27,7 +27,7 @@ export default function ChatHeader({ userId, companionInfo }: Props) {
           lastSeen: "Long time ago",
         });
     }
-  }, [companionInfo, onlineUsers, companionInfo._id]);
+  }, [companionInfo, onlineUsers]);
 
   return (
     <header className="z-1 px-[20px] h-[60px] border-b-[1px] border-[#333333] flex flex-row text-white w-full justify-between items-center bg-[#242526] ">
