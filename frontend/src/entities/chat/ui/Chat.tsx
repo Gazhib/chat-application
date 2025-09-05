@@ -1,6 +1,6 @@
 import { useParams } from "react-router";
 import { useEffect, useRef, useState } from "react";
-import { useMessages } from "../model/useMessages";
+import { useMessages } from "../../messages/model/useMessages";
 import { useSidebar } from "@/widget/extended-sidebar/model/useSidebar";
 import { useUserStore, type userInfo } from "@/entities/user/model/userZustand";
 import { ProfileModal } from "@/entities/user/ui/ProfileModal";
@@ -20,9 +20,8 @@ export default function Chat() {
     hasNextPage,
     isFetchingNextPage,
     data,
-  } = useMessages({
-    chatId: chatId ?? "",
-  });
+    readMessage,
+  } = useMessages();
   const { modalRef } = useSidebar();
 
   const [typed, setTyped] = useState("");
@@ -64,8 +63,9 @@ export default function Chat() {
   }, [messages]);
 
   useEffect(() => {
+    if (!chatId || !user || !keyPairs) return;
     handleDecrypting();
-  }, [chatId, user, keyPairs, data?.pages.length]);
+  }, [chatId, user, keyPairs, data?.pages]);
 
   return (
     <section className="h-screen flex flex-col bg-[#1E1F22]">
@@ -79,6 +79,7 @@ export default function Chat() {
         className="flex-1 w-[calc(100vw-290px)] min-h-0 max-h-[calc(100vh-110px)] flex flex-col px-[20px] py-[10px] pb-[20px] overflow-y-auto gap-[10px]"
       >
         <Messages
+          readMessage={readMessage}
           isLoading={isFetchingNextPage}
           messages={messages}
           userId={user?._id}

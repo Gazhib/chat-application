@@ -3,7 +3,7 @@ import { useEffect, useRef } from "react";
 import { useParams } from "react-router";
 import { useCallStore } from "./callZustand";
 import { useVideoToolbar } from "../ui/Toolbar/model/useVideoToolbar";
-import { useMessageStore } from "@/entities/chat/model/messageZustand";
+import { useMessageStore } from "@/entities/messages/model/messageZustand";
 type payload = {
   target: string | undefined;
   caller: string | undefined;
@@ -69,7 +69,6 @@ export const useVideoChat = () => {
   };
 
   const handleReceiveCall = (incoming: payload) => {
-    console.log("onHandleReceiveCall");
     peerRef.current = createPeer();
     const desc = new RTCSessionDescription(incoming.sdp!);
     peerRef.current
@@ -133,13 +132,11 @@ export const useVideoChat = () => {
   };
 
   const onOtherUser = (userId: string) => {
-    console.log("other user");
     callUser(userId);
     otherUser.current = userId;
   };
 
   const onUserJoined = (userId: string) => {
-    console.log("user joined");
     otherUser.current = userId;
   };
 
@@ -176,7 +173,6 @@ export const useVideoChat = () => {
                   finishedAt: new Date().toLocaleTimeString().slice(0, 5),
                 }
           );
-          console.log(updatedMessages);
           setMessages(updatedMessages);
           window.close();
           setIsFinished(true);

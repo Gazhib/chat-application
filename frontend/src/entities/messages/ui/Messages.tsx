@@ -3,7 +3,6 @@ import type { userInfo } from "@/entities/user/model/userZustand";
 import MessageBubble from "./message-bubble/ui/MessageBubble";
 import LoadingSpinner from "@/shared/spinner/ui/LoadingSpinner";
 import { useChatHeader } from "@/entities/chat/ui/header/model/useChatHeader";
-import { useEffect } from "react";
 
 interface Messages {
   isLoading: boolean;
@@ -11,6 +10,7 @@ interface Messages {
   userId?: string;
   companion: userInfo;
   setCurrentUserModal?: (value: string) => void;
+  readMessage: (messageId: string) => Promise<void>;
 }
 
 export default function Messages({
@@ -19,12 +19,9 @@ export default function Messages({
   userId = "",
   companion,
   setCurrentUserModal,
+  readMessage,
 }: Messages) {
   const { handleCall } = useChatHeader();
-
-  useEffect(() => {
-    console.log(isLoading);
-  }, [isLoading]);
 
   return (
     <main className="flex-1 w-full flex flex-col gap-[10px]">
@@ -35,6 +32,7 @@ export default function Messages({
 
           return (
             <MessageBubble
+              readMessage={readMessage}
               setCurrentUserModal={setCurrentUserModal}
               messageId={message._id!}
               key={`${message.createdAt}-${message.meta}-${index}`}

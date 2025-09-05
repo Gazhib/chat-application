@@ -9,7 +9,6 @@ export default function ProfileButton({
   user: { profilePicture?: string; login?: string };
   pp: string;
 }) {
-  console.log(user);
   return (
     <SidebarElement onClick={handleProfile}>
       <img

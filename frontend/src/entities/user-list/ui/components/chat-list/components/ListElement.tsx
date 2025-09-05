@@ -1,4 +1,5 @@
-import type { MessageSchema } from "@/entities/chat/ui/components/messages/ui/components/message-bubble/model/types";
+import type { MessageSchema } from "@/entities/messages/ui/message-bubble/model/types";
+import { useUserStore } from "@/entities/user/model/userZustand";
 import { pp } from "@/entities/user/model/useUser";
 
 interface CLElementScheme {
@@ -16,14 +17,20 @@ export default function CLElement({
   lastMessage,
   isOnline = false,
 }: CLElementScheme) {
+  const user = useUserStore((state) => state.user);
+  const isRead = !lastMessage
+    ? true
+    : (lastMessage && lastMessage.status?.read === 1) ||
+      lastMessage?.senderId === user?._id;
+
   return (
     <button
       onClick={openChat}
-      className="h-[60px] px-[10px] relative w-full items-center gap-[10px] flex flex-row border-b-[1px] border-[#333333] hover:bg-[#2E2F30] text-white cursor-pointer"
+      className={`"h-[70px] px-[10px] py-[5px] relative w-full items-center gap-[10px] flex flex-row border-b-[1px] border-[#333333] hover:bg-[#2E2F30] text-white cursor-pointer `}
     >
       <img
         src={profilePicture ? profilePicture : pp}
-        className="w-[50px] h-[50px] object-cover rounded-full"
+        className="h-[50px] aspect-square object-cover rounded-full"
       />
       <section className="flex flex-col truncate">
         <span className="text-[16px] self-start">{login}</span>
@@ -41,6 +48,9 @@ export default function CLElement({
       </section>
       {isOnline && (
         <div className="absolute w-[10px] h-[10px] bg-green-600 rounded-full left-[45px] bottom-[5px]" />
+      )}
+      {!isRead && (
+        <div className="ml-auto mr-[5px] h-[7px] aspect-square rounded-full bg-blue-500"></div>
       )}
     </button>
   );

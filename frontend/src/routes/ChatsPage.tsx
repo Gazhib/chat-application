@@ -4,12 +4,15 @@ import { usePersonalSocket } from "@/util/model/socket/usePersonalSocket";
 import { useUserStore } from "@/entities/user/model/userZustand";
 import { useKeyStore } from "@/util/model/store/zustand";
 import ChatSidebar from "@/entities/user-list/ui/ChatSidebar";
+import { useSocketMessages } from "@/entities/messages/model/useSocketMessages";
 
 export default function ChatsPage() {
   const user = useUserStore((state) => state.user);
   usePersonalSocket({ id: user?._id ?? "" });
 
   const generateKeyPairs = useKeyStore((state) => state?.getKeyPairs);
+
+  useSocketMessages();
 
   useEffect(() => {
     async function genKeyPairs() {

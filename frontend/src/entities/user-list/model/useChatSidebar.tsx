@@ -8,6 +8,7 @@ import { port } from "@/util/ui/ProtectedRoutes";
 import { useKeyStore } from "@/util/model/store/zustand";
 import { getSharedKey } from "@/entities/chat/model/encryption";
 import { decryptMessage } from "@/entities/chat/model/decryption";
+import { useMessageStore } from "@/entities/messages/model/messageZustand";
 export interface User extends userInfo {
   lastMessage: MessageSchema;
   chatId: string;
@@ -16,12 +17,16 @@ export interface User extends userInfo {
 type userStoreSchema = {
   users: User[];
   setUsers: (users: User[]) => void;
+  addUser: (user: User) => void;
 };
 
 export const usersStore = create<userStoreSchema>((set) => ({
   users: [],
   setUsers: (users: User[]) => {
     set({ users: users });
+  },
+  addUser: (user: User) => {
+    set((state) => ({ users: [user, ...state.users] }));
   },
 }));
 
@@ -50,11 +55,13 @@ export const useChatSidebar = () => {
 
   const navigate = useNavigate();
 
+  const setMessages = useMessageStore((state) => state.setMessages);
+
   const openChat = async (chatId: string, companionId: string) => {
     setTyped("");
     let finalChatId = chatId;
     if (!chatId) {
-      const response = await fetch(`http://localhost:3000/chats`, {
+      const response = await fetch(`${port}/chats`, {
         method: "POST",
         credentials: "include",
         headers: { "Content-Type": "application/json" },
@@ -64,6 +71,7 @@ export const useChatSidebar = () => {
       const chat = await response.json();
       finalChatId = chat._id;
     }
+    setMessages([]);
     navigate(`/chats/${finalChatId}`);
   };
 
@@ -95,13 +103,15 @@ export const useChatSidebar = () => {
     if (!data) return;
     const handle = async () => {
       const updatedUsers = data.map(async (curUser) => {
-        const { lastMessage } = curUser;
+        const {
+          lastMessage = { meta: "", chatId: "", cipher: { iv: "", data: "" } },
+        } = curUser;
+
+        if (!lastMessage.chatId || !keyPairs) return curUser;
+
         const { chatId, cipher } = lastMessage;
 
-        const newSharedKey = await getSharedKey(
-          chatId,
-          keyPairs!.privateKey
-        );
+        const newSharedKey = await getSharedKey(chatId, keyPairs!.privateKey);
 
         const newMessage = await decryptMessage(newSharedKey, {
           iv: cipher.iv,

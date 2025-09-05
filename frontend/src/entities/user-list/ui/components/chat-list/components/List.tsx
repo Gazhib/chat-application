@@ -8,12 +8,13 @@ interface ListScheme {
 }
 
 export default function List({ onlineUsers, openChat, users }: ListScheme) {
+
   return (
-    <ul>
-      {users.map((curUser) => {
+    <ol>
+      {users.map((curUser, index) => {
         return (
           <CLElement
-            key={curUser._id}
+            key={`${curUser._id}-${index}`}
             openChat={() => openChat(curUser.chatId, curUser._id)}
             login={curUser.login}
             profilePicture={curUser.profilePicture}
@@ -22,6 +23,6 @@ export default function List({ onlineUsers, openChat, users }: ListScheme) {
           />
         );
       })}
-    </ul>
+    </ol>
   );
 }
