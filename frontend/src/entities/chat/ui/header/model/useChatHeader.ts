@@ -1,4 +1,4 @@
-import { useMessages } from "@/entities/chat/model/useMessages";
+import { useMessages } from "@/entities/messages/model/useMessages";
 import { useUserStore } from "@/entities/user/model/userZustand";
 import { port } from "@/util/ui/ProtectedRoutes";
 import { useParams } from "react-router";
@@ -8,7 +8,7 @@ export const useChatHeader = () => {
 
   const companionId = useUserStore((state) => state.companionId);
 
-  const { sendMessage } = useMessages({ chatId: chatId ?? "" });
+  const { sendMessage } = useMessages();
   const handleCall = async () => {
     const response = await fetch(`${port}/calls`, {
       method: "POST",
@@ -20,7 +20,6 @@ export const useChatHeader = () => {
     });
 
     if (!response.ok) {
-      console.log(await response.json());
       return;
     }
 

@@ -35,8 +35,8 @@ export const useUser = () => {
         if (isVerified === false && email) {
           navigate(`/verify?email=${email}`);
         }
+        setUser({ email, login, role, _id, description, profilePicture });
         if (isVerified) {
-          setUser({ email, login, role, _id, description, profilePicture });
         }
       }
     } catch (e) {
@@ -83,6 +83,7 @@ export const useUser = () => {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({ description: typed }),
+      credentials: "include",
     });
 
     if (!response.ok) {
@@ -90,6 +91,7 @@ export const useUser = () => {
       return;
     }
     setUserDescription(typed);
+    setUser({ ...user!, description: typed });
     setIsChangingDescription(false);
   };
 

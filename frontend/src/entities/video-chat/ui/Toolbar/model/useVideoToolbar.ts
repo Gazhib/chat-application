@@ -3,7 +3,7 @@ import { useCallStore } from "../../../model/callZustand";
 import { socket } from "@/util/model/socket/socket";
 import { useNavigate, useParams } from "react-router";
 import { port } from "@/util/ui/ProtectedRoutes";
-import { useMessageStore } from "@/entities/chat/model/messageZustand";
+import { useMessageStore } from "@/entities/messages/model/messageZustand";
 
 export const useVideoToolbar = () => {
   const { callId } = useParams();
@@ -103,7 +103,6 @@ export const useVideoToolbar = () => {
             finishedAt: new Date().toLocaleTimeString().slice(0, 5),
           }
     );
-    console.log(updatedMessages);
 
     setMessages(updatedMessages);
     socket.emit("hangUp");

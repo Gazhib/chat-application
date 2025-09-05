@@ -4,8 +4,6 @@ import type { MessageSchema } from "@/entities/messages/ui/message-bubble/model/
 interface messageStoreState {
   messages: MessageSchema[];
   setMessages: (messages: MessageSchema[]) => void;
-  pagination: number;
-  increasePagination: () => void;
   addSingleMessage: (message: MessageSchema) => void;
   addMessages: (messages: MessageSchema[]) => void;
 }
@@ -21,11 +19,5 @@ export const useMessageStore = create<messageStoreState>((set) => ({
   addMessages: (messages: MessageSchema[]) => {
     set((state) => ({ messages: [...messages, ...state.messages] }));
   },
-  pagination: 1,
-  increasePagination: () => {
-    set((state) => {
-      console.log("pagination", state.pagination);
-      return { pagination: state.pagination + 1 };
-    });
-  },
+
 }));

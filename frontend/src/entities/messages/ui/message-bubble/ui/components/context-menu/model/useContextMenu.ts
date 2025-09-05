@@ -16,21 +16,19 @@ export const useContextMenu = ({ messageId }: contextMenu) => {
   const handleDelete = async () => {
     socket.emit("deleteMessage", { messageId, chatId });
 
-    const response = await fetch(`${port}/messages/${messageId}`, {
+    await fetch(`${port}/messages/${messageId}`, {
       method: "DELETE",
       credentials: "include",
       headers: {
         "Content-Type": "application/json",
       },
     });
-
-    console.log(await response.json());
   };
 
   const handleEdit = async () => {
     socket.emit("editMessage", { messageId, chatId, editedMessage });
 
-    const response = await fetch(`${port}/edit-message`, {
+    await fetch(`${port}/edit-message`, {
       method: "POST",
       credentials: "include",
       body: JSON.stringify({ messageId, editedMessage }),
@@ -38,8 +36,6 @@ export const useContextMenu = ({ messageId }: contextMenu) => {
         "Content-Type": "application/json",
       },
     });
-
-    console.log(await response.json());
   };
 
   const options = [

@@ -1,4 +1,4 @@
-import { useRef } from "react";
+import { useEffect, useRef } from "react";
 import type { MessageSchema } from "../model/types";
 import { PhotoModal } from "./components/PhotoModal/PhotoModal";
 import { useUserStore, type userInfo } from "@/entities/user/model/userZustand";
@@ -17,6 +17,7 @@ type Props = {
   companion: userInfo;
   setCurrentUserModal?: (value: string) => void;
   handleCall?: () => void;
+  readMessage: (messageId: string) => Promise<void>;
 };
 export default function MessageBubble({
   message,
@@ -25,7 +26,10 @@ export default function MessageBubble({
   companion,
   setCurrentUserModal = () => {},
   handleCall = () => {},
+  readMessage,
 }: Props) {
+  const bubbleRef = useRef<HTMLDivElement>(null);
+
   const { isContextMenu, handleClick } = useContextMenu({ messageId });
   const time = new Date(message.createdAt).toLocaleTimeString().slice(0, 5);
   const user = useUserStore((state) => state.user);
@@ -44,8 +48,34 @@ export default function MessageBubble({
     photoModalRef.current?.openModal();
   };
 
+  useEffect(() => {
+    if (!bubbleRef.current) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting && !isMe && message?.status?.read !== 1) {
+            readMessage(message._id!);
+            observer.unobserve(bubbleRef.current!);
+          }
+        });
+      },
+      { threshold: 1.0 }
+    );
+
+    observer.observe(bubbleRef.current);
+
+    return () => {
+      if (bubbleRef.current) {
+        observer.unobserve(bubbleRef.current);
+      }
+    };
+  }, []);
+
+
   return (
     <div
+      ref={bubbleRef}
       className={`max-w-[65%] flex ${
         isMe ? "flex-row-reverse self-end" : "flex-row self-start"
       } gap-[10px] relative`}
@@ -53,7 +83,7 @@ export default function MessageBubble({
       <ProfilePicture
         handleOpenModal={handleOpenModal}
         picture={
-          isMe ? user?.profilePicture || pp : companion.profilePicture || pp
+          isMe ? user?.profilePicture || pp : companion?.profilePicture || pp
         }
       />
 
