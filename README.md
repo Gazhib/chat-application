@@ -16,7 +16,7 @@ Chat application.
 - TanStack Query for server state synchronization
 - React Router v6+ for clean routing
 - TailwindCSS for modern UI
-- 🗄️ Backend & Infrastructure
+🗄️ Backend & Infrastructure
 - Node.js + Express server
 - MongoDB for persistent storage
 - AWS S3 for image uploads
