@@ -26,3 +26,7 @@ Chat application.
 ![Chat UI 2](./frontend/public/image4.png)
 ![Profile Modal](./frontend/public/image2.png)
 ![Photo Changing](./frontend/public/image3.png)
+
+
+# Author
+Batyrlan Ubingazhibov - batyrlan.ubingazhibov@nu.edu.kz
