@@ -1,5 +1,5 @@
 import { Form, Link, useActionData, useNavigation } from "react-router";
-import AuthInput from "./auth-input/AuthInput";
+import AuthInput from "./AuthInput";
 
 type Props = {
   mode: string;

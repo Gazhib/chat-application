@@ -1,0 +1,448 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Backend Audit Report</title>
+  <style>
+    :root {
+      --bg: #f5f1e8;
+      --paper: #fffdf8;
+      --ink: #1f2933;
+      --muted: #52606d;
+      --border: #d9d3c6;
+      --critical: #9b1c1c;
+      --high: #b45309;
+      --medium: #1d4ed8;
+      --low: #475569;
+      --accent: #0f766e;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: "Segoe UI", Arial, sans-serif;
+      color: var(--ink);
+      background: linear-gradient(180deg, #eee5d3 0%, var(--bg) 100%);
+      line-height: 1.45;
+    }
+    .page {
+      max-width: 980px;
+      margin: 24px auto;
+      background: var(--paper);
+      border: 1px solid var(--border);
+      padding: 36px 42px 48px;
+      box-shadow: 0 10px 30px rgba(31, 41, 51, 0.08);
+    }
+    h1, h2, h3 {
+      margin: 0 0 12px;
+      line-height: 1.2;
+    }
+    h1 {
+      font-size: 30px;
+      letter-spacing: 0.2px;
+    }
+    h2 {
+      margin-top: 28px;
+      padding-top: 18px;
+      border-top: 2px solid #ece5d8;
+      font-size: 22px;
+    }
+    h3 {
+      font-size: 18px;
+      margin-top: 20px;
+    }
+    p {
+      margin: 8px 0;
+    }
+    .subtle {
+      color: var(--muted);
+    }
+    .summary {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 12px;
+      margin: 22px 0 8px;
+    }
+    .summary-card {
+      border: 1px solid var(--border);
+      border-left-width: 5px;
+      padding: 14px 16px;
+      border-radius: 8px;
+      background: #fff;
+    }
+    .summary-card strong {
+      display: block;
+      font-size: 24px;
+      margin-bottom: 4px;
+    }
+    .critical { border-left-color: var(--critical); }
+    .high { border-left-color: var(--high); }
+    .medium { border-left-color: var(--medium); }
+    .low { border-left-color: var(--low); }
+    .badge {
+      display: inline-block;
+      padding: 4px 10px;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.6px;
+      color: #fff;
+      margin-bottom: 12px;
+    }
+    .badge.critical { background: var(--critical); }
+    .badge.high { background: var(--high); }
+    .badge.medium { background: var(--medium); }
+    .badge.low { background: var(--low); }
+    .finding {
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 18px 20px;
+      margin: 16px 0;
+      background: #fff;
+      page-break-inside: avoid;
+    }
+    .meta {
+      font-size: 13px;
+      color: var(--muted);
+      margin-bottom: 8px;
+    }
+    .label {
+      font-weight: 700;
+      color: var(--accent);
+    }
+    ul {
+      margin: 10px 0 0 20px;
+      padding: 0;
+    }
+    li { margin: 6px 0; }
+    .top-risks li { margin: 8px 0; }
+    .footer-note {
+      margin-top: 20px;
+      padding: 12px 14px;
+      background: #f7f3ea;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: var(--muted);
+      font-size: 13px;
+    }
+    code {
+      font-family: Consolas, "Courier New", monospace;
+      background: #f4efe5;
+      padding: 1px 4px;
+      border-radius: 4px;
+    }
+    @media print {
+      body { background: #fff; }
+      .page {
+        margin: 0;
+        max-width: none;
+        box-shadow: none;
+        border: none;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="page">
+    <h1>Backend Audit Report</h1>
+    <p class="subtle">
+      Scope: <code>backend/</code> only<br />
+      Audit date: 2026-04-13<br />
+      Reviewer focus: architecture, layering, async/await correctness, exception handling, validation,
+      auth/session handling, database safety, security, scalability, and maintainability.
+    </p>
+
+    <div class="summary">
+      <div class="summary-card critical">
+        <strong>2</strong>
+        Critical findings
+      </div>
+      <div class="summary-card high">
+        <strong>12</strong>
+        High findings
+      </div>
+      <div class="summary-card medium">
+        <strong>10</strong>
+        Medium findings
+      </div>
+      <div class="summary-card low">
+        <strong>1</strong>
+        Low findings
+      </div>
+    </div>
+
+    <h2>Executive Summary</h2>
+    <p>
+      The backend is functional but architecturally fragile. Core concerns such as authentication,
+      messaging, storage, and realtime signaling are tightly coupled into top-level route files, and
+      several trust boundaries are not enforced server-side.
+    </p>
+    <p>
+      The biggest risks are unauthorized data operations, unvalidated socket events, session/token
+      weaknesses, and race conditions around chat and call creation. The project also lacks the
+      structure needed to scale safely: there is no route/controller/service/repository separation,
+      no centralized validation or error policy, and schema/index design does not protect data integrity.
+    </p>
+
+    <h2>Top Risks</h2>
+    <ul class="top-risks">
+      <li>Any authenticated user can delete any message by ID.</li>
+      <li>Socket events trust client payloads and allow unauthorized room joins and forged events.</li>
+      <li>Refresh token handling is inconsistent and does not support rotation, revocation, or DB revalidation.</li>
+      <li>Chat and call creation rely on check-then-insert flows without uniqueness guarantees.</li>
+      <li>The codebase is monolithic, making security fixes and regression-safe changes harder than necessary.</li>
+    </ul>
+
+    <h2>Detailed Findings</h2>
+
+    <section class="finding">
+      <div class="badge critical">Critical</div>
+      <h3>1. Message deletion is unauthorized</h3>
+      <div class="meta">File: <code>backend/app.js:405-412</code></div>
+      <p><span class="label">Explanation:</span> <code>DELETE /messages/:messageId</code> deletes by primary key only. It does not verify that the caller owns the message or even belongs to the related chat.</p>
+      <p><span class="label">Impact:</span> Any authenticated user who learns a message ID can delete another user's data.</p>
+      <p><span class="label">Recommended fix:</span> Load the message, resolve the chat, verify sender or chat membership, and consider soft-delete plus audit logging.</p>
+    </section>
+
+    <section class="finding">
+      <div class="badge critical">Critical</div>
+      <h3>2. Socket events trust client input without authorization checks</h3>
+      <div class="meta">File: <code>backend/socket.js:59-145</code></div>
+      <p><span class="label">Explanation:</span> <code>joinRoom</code>, <code>chatMessage</code>, <code>deleteMessage</code>, and call-signaling events accept client-supplied chat IDs, sender IDs, companion IDs, and targets without checking database membership or ownership.</p>
+      <p><span class="label">Impact:</span> Clients can join arbitrary rooms, spoof messages, broadcast deletes, and interfere with calls outside their authorization boundary.</p>
+      <p><span class="label">Recommended fix:</span> Resolve authorization on the server for every socket event, derive <code>senderId</code> from <code>socket.data.user</code>, and reject room joins or emits when the user is not a verified member.</p>
+    </section>
+
+    <section class="finding">
+      <div class="badge high">High</div>
+      <h3>3. The backend is monolithic and lacks route/controller/service/repository separation</h3>
+      <div class="meta">Files: <code>backend/app.js:70-537</code>, <code>backend/auth.js:84-278</code>, <code>backend/bucket.js:22-41</code>, <code>backend/call.js:3-15</code></div>
+      <p><span class="label">Explanation:</span> Route handlers directly mix HTTP concerns, auth, database queries, S3 access, and domain logic. There is no consistent controller/service/repository boundary.</p>
+      <p><span class="label">Impact:</span> Security fixes, testing, reuse, and performance tuning become error-prone because every endpoint is a custom implementation.</p>
+      <p><span class="label">Recommended fix:</span> Split transport, application, and persistence concerns. Introduce routers, controllers, services, repositories, and shared middleware for auth, validation, and error handling.</p>
+    </section>
+
+    <section class="finding">
+      <div class="badge high">High</div>
+      <h3>4. Module format is inconsistent and relies on Node's typeless reparsing fallback</h3>
+      <div class="meta">Files: <code>backend/package.json:1-37</code>, <code>backend/app.js:9,19</code>, <code>backend/auth.js:10</code>, <code>backend/socket.js:1-12</code>, <code>backend/call.js:1-3</code>, <code>backend/mailer.js:1-11</code></div>
+      <p><span class="label">Explanation:</span> The package has no <code>"type"</code> declaration, but some files use CommonJS and others use ES module syntax. Node 22 reparses these files with a warning and added overhead.</p>
+      <p><span class="label">Impact:</span> Startup behavior is environment-dependent, tooling gets confused, and deployment on stricter runtimes can break.</p>
+      <p><span class="label">Recommended fix:</span> Standardize on one module system. Either declare <code>"type": "module"</code> and convert fully, or move ESM files to CommonJS.</p>
+    </section>
+
+    <section class="finding">
+      <div class="badge high">High</div>
+      <h3>5. Server startup does not fail fast or wait for database readiness</h3>
+      <div class="meta">Files: <code>backend/app.js:37-41,541-543</code>, <code>backend/auth.js:45-49,282-284</code></div>
+      <p><span class="label">Explanation:</span> MongoDB is connected in an unguarded async IIFE, while both servers start listening independently. Connection failures are not handled explicitly.</p>
+      <p><span class="label">Impact:</span> The app can accept requests before persistence is ready, leading to noisy failures and partial startup states.</p>
+      <p><span class="label">Recommended fix:</span> Bootstrap through a single async startup function that awaits DB connection, logs failures clearly, and exits on fatal initialization errors.</p>
+    </section>
+
+    <section class="finding">
+      <div class="badge high">High</div>
+      <h3>6. Refresh token and session handling are insecure and inconsistent</h3>
+      <div class="meta">File: <code>backend/auth.js:68-77,240-278</code></div>
+      <p><span class="label">Explanation:</span> Refresh tokens are signed for one week but the cookie max age is one hour. Tokens are not rotated, not persisted, not revocable server-side, and refresh trusts old JWT payload data instead of reloading the user from the database.</p>
+      <p><span class="label">Impact:</span> Session behavior is unpredictable, revoked or changed users can stay authorized, and stolen refresh tokens remain useful until expiry.</p>
+      <p><span class="label">Recommended fix:</span> Store refresh sessions server-side, rotate on use, revoke on logout, align cookie lifetime with token lifetime, and rebuild access-token claims from fresh DB state.</p>
+    </section>
+
+    <section class="finding">
+      <div class="badge high">High</div>
+      <h3>7. Login does not enforce email verification</h3>
+      <div class="meta">File: <code>backend/auth.js:98-130</code></div>
+      <p><span class="label">Explanation:</span> The login flow validates credentials but never blocks users whose <code>isVerified</code> flag is still false.</p>
+      <p><span class="label">Impact:</span> The email verification flow becomes optional in practice, weakening account proof and abuse controls.</p>
+      <p><span class="label">Recommended fix:</span> Reject unverified logins or place them into a restricted state until verification succeeds.</p>
+    </section>
+
+    <section class="finding">
+      <div class="badge high">High</div>
+      <h3>8. Registration and verification flow is unsafe under failure and uses weak verification-code handling</h3>
+      <div class="meta">File: <code>backend/auth.js:174-198,201-237</code></div>
+      <p><span class="label">Explanation:</span> Verification codes are generated with <code>Math.random()</code>, stored in plaintext, and sent after the user is already persisted. If email delivery fails, the database still contains a blocked, unverified account. Expired codes trigger user deletion.</p>
+      <p><span class="label">Impact:</span> Registration can dead-end users, verification secrets are weaker than necessary, and expired verification attempts can destroy account records unexpectedly.</p>
+      <p><span class="label">Recommended fix:</span> Generate cryptographically strong codes, store only a hash, add retry/resend and attempt limits, and use a transaction or compensating cleanup strategy around user creation plus email dispatch.</p>
+    </section>
+
+    <section class="finding">
+      <div class="badge high">High</div>
+      <h3>9. Message creation mixes unvalidated parsing with non-atomic storage operations</h3>
+      <div class="meta">File: <code>backend/app.js:70-127</code></div>
+      <p><span class="label">Explanation:</span> The route blindly runs <code>JSON.parse(message)</code> on multipart input and then performs S3 upload plus MongoDB save in one handler without compensation. If one step succeeds and the other fails, state becomes inconsistent.</p>
+      <p><span class="label">Impact:</span> Malformed requests can trigger 500s, orphan S3 objects can accumulate, and message state can diverge from stored media.</p>
+      <p><span class="label">Recommended fix:</span> Validate payload structure before parsing, wrap the flow in clear error handling, and add compensating delete or a durable outbox/job strategy for media persistence.</p>
+    </section>
+
+    <section class="finding">
+      <div class="badge high">High</div>
+      <h3>10. Direct-chat creation has no uniqueness or companion validation</h3>
+      <div class="meta">File: <code>backend/app.js:239-250</code></div>
+      <p><span class="label">Explanation:</span> <code>POST /chats</code> inserts a new direct chat immediately. It does not verify that the companion exists, block self-chat creation, or ensure a direct chat between the same two users does not already exist.</p>
+      <p><span class="label">Impact:</span> Duplicate conversations, invalid memberships, and inconsistent UX are likely as traffic grows.</p>
+      <p><span class="label">Recommended fix:</span> Validate the companion user, normalize member ordering for direct chats, enforce a uniqueness constraint, and return the existing chat when present.</p>
+    </section>
+
+    <section class="finding">
+      <div class="badge high">High</div>
+      <h3>11. Call creation uses a race-prone check-then-insert pattern</h3>
+      <div class="meta">Files: <code>backend/app.js:458-484</code>, <code>backend/models.js:155-174</code></div>
+      <p><span class="label">Explanation:</span> The code performs separate <code>exists</code> checks before inserting a call room, and there is no unique index on <code>roomId</code> or active-call membership state.</p>
+      <p><span class="label">Impact:</span> Concurrent requests can create overlapping or duplicate calls for the same users.</p>
+      <p><span class="label">Recommended fix:</span> Enforce uniqueness at the database layer and create rooms through an atomic operation or transaction.</p>
+    </section>
+
+    <section class="finding">
+      <div class="badge high">High</div>
+      <h3>12. Call disconnect endpoint never completes the HTTP response</h3>
+      <div class="meta">File: <code>backend/app.js:505-511</code></div>
+      <p><span class="label">Explanation:</span> <code>DELETE /calls/:callId</code> awaits <code>callDisconnect</code> and then returns nothing.</p>
+      <p><span class="label">Impact:</span> Clients can hang until timeout and may retry, producing duplicate side effects.</p>
+      <p><span class="label">Recommended fix:</span> Send a deterministic success or failure response after the disconnect logic finishes.</p>
+    </section>
+
+    <section class="finding">
+      <div class="badge high">High</div>
+      <h3>13. Message status patching can crash and mis-handle membership checks</h3>
+      <div class="meta">File: <code>backend/app.js:317-338</code></div>
+      <p><span class="label">Explanation:</span> The route reads <code>message.chatId</code> before confirming that <code>message</code> exists. It also uses <code>chat.membershipIds.includes(userId)</code>, which is unreliable when comparing ObjectIds to strings.</p>
+      <p><span class="label">Impact:</span> Missing records can throw, and valid members may be denied or handled inconsistently.</p>
+      <p><span class="label">Recommended fix:</span> Return early when the message is missing and compare normalized strings or use MongoDB membership queries instead of in-memory <code>includes</code>.</p>
+    </section>
+
+    <section class="finding">
+      <div class="badge high">High</div>
+      <h3>14. Core collections are missing data-integrity and query indexes</h3>
+      <div class="meta">File: <code>backend/models.js:3-181</code></div>
+      <p><span class="label">Explanation:</span> Users do not enforce unique <code>email</code> or <code>login</code>, call rooms do not enforce unique <code>roomId</code>, and common filters such as <code>chatId</code>, <code>membershipIds</code>, and <code>roomId</code> are not indexed.</p>
+      <p><span class="label">Impact:</span> Concurrency can create duplicates, and read performance will degrade as collections grow.</p>
+      <p><span class="label">Recommended fix:</span> Add unique indexes for identity fields and targeted query indexes for frequent lookups.</p>
+    </section>
+
+    <section class="finding">
+      <div class="badge high">High</div>
+      <h3>15. There is no centralized validation or error-handling policy</h3>
+      <div class="meta">Files: <code>backend/app.js:70-537</code>, <code>backend/auth.js:84-278</code></div>
+      <p><span class="label">Explanation:</span> Validation is ad hoc and duplicated across handlers, while exceptions are either uncaught, converted to raw JSON objects, or depend on framework defaults.</p>
+      <p><span class="label">Impact:</span> API behavior is inconsistent, errors are harder to reason about, and security bugs hide in endpoint-specific validation code.</p>
+      <p><span class="label">Recommended fix:</span> Adopt a schema validator such as Zod/Joi, validate params/query/body centrally, and add a single error middleware that maps internal failures to safe HTTP responses.</p>
+    </section>
+
+    <section class="finding">
+      <div class="badge high">High</div>
+      <h3>16. JWT payloads contain mutable profile data and use inconsistent role casing</h3>
+      <div class="meta">File: <code>backend/auth.js:116-124,223-231,253-259</code></div>
+      <p><span class="label">Explanation:</span> Access and refresh tokens embed <code>description</code>, <code>profilePicture</code>, <code>isVerified</code>, and role values that differ between flows (<code>user</code> vs <code>USER</code>).</p>
+      <p><span class="label">Impact:</span> Cookies grow unnecessarily, authorization data becomes stale, and downstream role checks can become inconsistent.</p>
+      <p><span class="label">Recommended fix:</span> Keep JWT claims minimal and stable, typically user ID, token ID, and maybe role; derive mutable profile data from the database when needed.</p>
+    </section>
+
+    <section class="finding">
+      <div class="badge medium">Medium</div>
+      <h3>17. The users list route has a key-type bug and ineffective filtering</h3>
+      <div class="meta">File: <code>backend/app.js:141-147,175-195</code></div>
+      <p><span class="label">Explanation:</span> The map stores chat IDs under an ObjectId key but later reads them using string keys, so lookups can return <code>undefined</code>. The subsequent <code>users.filter(...)</code> result is also ignored.</p>
+      <p><span class="label">Impact:</span> Chat metadata can be missing or misassigned, and the returned ordering can be wrong.</p>
+      <p><span class="label">Recommended fix:</span> Normalize keys with <code>toString()</code> on both insert and lookup, and assign the filtered result back before sorting or returning.</p>
+    </section>
+
+    <section class="finding">
+      <div class="badge medium">Medium</div>
+      <h3>18. User search does not await async profile-picture enrichment</h3>
+      <div class="meta">File: <code>backend/app.js:223-230</code></div>
+      <p><span class="label">Explanation:</span> <code>Promise.all(...)</code> is called but not awaited before the response is sent.</p>
+      <p><span class="label">Impact:</span> Clients may receive unresolved or missing signed URLs.</p>
+      <p><span class="label">Recommended fix:</span> Await the <code>Promise.all</code> result or map synchronously before responding.</p>
+    </section>
+
+    <section class="finding">
+      <div class="badge medium">Medium</div>
+      <h3>19. Message pagination validation is weak and raw errors leak to clients</h3>
+      <div class="meta">File: <code>backend/app.js:255-315</code></div>
+      <p><span class="label">Explanation:</span> <code>req.query.limit</code> is clamped without explicit numeric parsing, <code>beforeId</code> is not validated, and the catch block returns the raw error object to the caller.</p>
+      <p><span class="label">Impact:</span> Invalid input can produce unstable behavior and expose internal failure details.</p>
+      <p><span class="label">Recommended fix:</span> Parse and validate pagination inputs explicitly, and return sanitized API errors only.</p>
+    </section>
+
+    <section class="finding">
+      <div class="badge medium">Medium</div>
+      <h3>20. The <code>/me</code> handler continues after unauthorized branches and assumes the user document exists</h3>
+      <div class="meta">File: <code>backend/app.js:513-536</code></div>
+      <p><span class="label">Explanation:</span> The unauthorized response path does not <code>return</code>, and the code immediately dereferences fields on the database user without checking whether the user still exists.</p>
+      <p><span class="label">Impact:</span> Requests can fall through into secondary failures or double-response behavior.</p>
+      <p><span class="label">Recommended fix:</span> Return immediately after 401, reload the user safely, and handle not-found cases explicitly.</p>
+    </section>
+
+    <section class="finding">
+      <div class="badge medium">Medium</div>
+      <h3>21. Profile-picture upload handling is brittle and memory-heavy</h3>
+      <div class="meta">File: <code>backend/app.js:43-50,433-455</code></div>
+      <p><span class="label">Explanation:</span> Multer uses <code>memoryStorage()</code> with up to 10 MB per file, and the route does not reject requests where <code>req.file</code> is missing after filtering.</p>
+      <p><span class="label">Impact:</span> Concurrent uploads can create memory pressure, and invalid files can fail with confusing downstream behavior.</p>
+      <p><span class="label">Recommended fix:</span> Validate presence explicitly, prefer streaming or temporary disk storage for larger files, and return a clear 4xx error when MIME validation fails.</p>
+    </section>
+
+    <section class="finding">
+      <div class="badge medium">Medium</div>
+      <h3>22. CORS and CSRF protections are brittle for a cookie-authenticated API</h3>
+      <div class="meta">Files: <code>backend/app.js:21-30,52-64</code>, <code>backend/auth.js:15-24,57-77</code>, <code>backend/socket.js:15-21</code></div>
+      <p><span class="label">Explanation:</span> Allowed origins include raw port values from env vars instead of canonical origins, and state-changing routes rely on cookies without a CSRF token strategy.</p>
+      <p><span class="label">Impact:</span> Environment configuration is easy to misapply, and cookie-based auth remains exposed to cross-site request risks.</p>
+      <p><span class="label">Recommended fix:</span> Centralize origin configuration as full URLs, validate it at startup, and add CSRF defenses or move to a safer token transport strategy.</p>
+    </section>
+
+    <section class="finding">
+      <div class="badge medium">Medium</div>
+      <h3>23. Realtime presence and call state are in-process only and break under scale</h3>
+      <div class="meta">File: <code>backend/socket.js:13-15,53-58,113-157</code></div>
+      <p><span class="label">Explanation:</span> <code>onlineUsers</code> and <code>rooms</code> are plain in-memory objects. A single user is mapped to one socket ID only.</p>
+      <p><span class="label">Impact:</span> Multi-instance deployments lose consistency, restarts drop state, and one tab disconnecting can mark an otherwise active user offline.</p>
+      <p><span class="label">Recommended fix:</span> Move ephemeral presence/call coordination to Redis or another shared adapter and support multiple sockets per user.</p>
+    </section>
+
+    <section class="finding">
+      <div class="badge medium">Medium</div>
+      <h3>24. Schema references are internally inconsistent and one timestamp default is incorrect</h3>
+      <div class="meta">File: <code>backend/models.js:68-73,156-169</code></div>
+      <p><span class="label">Explanation:</span> <code>membershipIds</code> are populated with user IDs in application code, but the schema references <code>memberships</code>. Also, <code>callRoomSchema.createdAt</code> uses <code>default: new Date()</code>, which is evaluated once when the schema is created.</p>
+      <p><span class="label">Impact:</span> Population semantics are misleading, model intent is unclear, and all call rooms can inherit the same default timestamp.</p>
+      <p><span class="label">Recommended fix:</span> Correct the refs to match stored IDs and replace <code>new Date()</code> with <code>Date.now</code>.</p>
+    </section>
+
+    <section class="finding">
+      <div class="badge medium">Medium</div>
+      <h3>25. Transaction safety is weak across multi-step domain operations</h3>
+      <div class="meta">Files: <code>backend/auth.js:181-198,201-213</code>, <code>backend/app.js:100-126,475-483</code>, <code>backend/call.js:3-15</code></div>
+      <p><span class="label">Explanation:</span> Several workflows update multiple systems or documents in sequence without transactions or compensation: registration plus email dispatch, media upload plus message save, and call/message teardown.</p>
+      <p><span class="label">Impact:</span> Partial failures leave persistent data in contradictory states.</p>
+      <p><span class="label">Recommended fix:</span> Use MongoDB transactions where the database is the source of truth, and apply compensating actions or durable workflows when external systems such as S3 or SMTP are involved.</p>
+    </section>
+
+    <section class="finding">
+      <div class="badge low">Low</div>
+      <h3>26. Tooling and hygiene gaps add avoidable maintenance cost</h3>
+      <div class="meta">Files: <code>backend/package.json:1-36</code>, <code>backend/auth.js:7,11</code>, <code>backend/app.js:134,282-302</code></div>
+      <p><span class="label">Explanation:</span> There are no test, lint, or build scripts. Some imports and dependencies are unused or redundant, and debug remnants remain in the code.</p>
+      <p><span class="label">Impact:</span> Regressions are easier to introduce and harder to catch automatically.</p>
+      <p><span class="label">Recommended fix:</span> Add linting and test scripts, remove unused dependencies/imports, and clean debug-only code before release.</p>
+    </section>
+
+    <h2>Prioritized Action Plan</h2>
+    <ul>
+      <li><strong>1. Close the security holes first:</strong> add authorization to message deletion, validate every socket event against chat/call membership, and enforce email verification on login.</li>
+      <li><strong>2. Stabilize auth/session behavior:</strong> redesign refresh tokens with rotation and server-side session records, minimize JWT claims, and add CSRF protection for cookie-authenticated writes.</li>
+      <li><strong>3. Protect data integrity:</strong> add unique/index constraints, fix direct-chat and call creation races, and correct schema refs plus timestamp defaults.</li>
+      <li><strong>4. Introduce platform-level safety rails:</strong> centralize validation, add error middleware, and make startup fail fast when configuration or DB connectivity is invalid.</li>
+      <li><strong>5. Restructure the codebase for maintainability:</strong> split routers/controllers/services/repositories, isolate storage and auth utilities, and make multi-step flows transactional or compensating.</li>
+      <li><strong>6. Improve scalability and operability:</strong> move realtime state out of process memory, support multi-socket presence, and add automated tests plus linting.</li>
+    </ul>
+
+    <div class="footer-note">
+      This report intentionally excludes everything outside <code>backend/</code>, per the requested scope.
+    </div>
+  </main>
+</body>
+</html>

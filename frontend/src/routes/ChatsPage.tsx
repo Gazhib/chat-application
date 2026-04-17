@@ -1,10 +1,10 @@
 import { Outlet } from "react-router";
 import { useEffect } from "react";
-import { usePersonalSocket } from "@/util/model/socket/usePersonalSocket";
 import { useUserStore } from "@/entities/user/model/userZustand";
-import { useKeyStore } from "@/util/model/store/zustand";
+import { useKeyStore } from "@/util/model/zustand";
 import ChatSidebar from "@/entities/user-list/ui/ChatSidebar";
 import { useSocketMessages } from "@/entities/messages/model/useSocketMessages";
+import { usePersonalSocket } from "@/util/model/usePersonalSocket";
 
 export default function ChatsPage() {
   const user = useUserStore((state) => state.user);
@@ -22,7 +22,7 @@ export default function ChatsPage() {
   }, [user?._id]);
 
   return (
-    <main className="ml-[50px] h-screen bg-[#18191A] w-[calc(100%-50px)] flex flex-row">
+    <main className="flex h-screen min-w-0 flex-row bg-[#18191A]">
       <ChatSidebar />
       <Outlet />
     </main>

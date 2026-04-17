@@ -1,5 +1,5 @@
 import { useInfiniteQuery, type InfiniteData } from "@tanstack/react-query";
-import type { MessageSchema } from "../ui/message-bubble/model/types";
+import type { MessageSchema } from "../ui/message-bubble/types";
 import { port } from "@/util/ui/ProtectedRoutes";
 import { useNavigate, useParams } from "react-router";
 

@@ -1,13 +1,11 @@
 import { useParams } from "react-router";
 import { useEffect, useRef, useState } from "react";
 import { useMessages } from "../../messages/model/useMessages";
-import { useSidebar } from "@/widget/extended-sidebar/model/useSidebar";
 import { useUserStore, type userInfo } from "@/entities/user/model/userZustand";
-import { ProfileModal } from "@/entities/user/ui/ProfileModal";
 import ChatInput from "./input/ChatInput";
 import Messages from "@/entities/messages/ui/Messages";
 import ChatHeader from "./header/Chatheader";
-import { useKeyStore } from "@/util/model/store/zustand";
+import { useKeyStore } from "@/util/model/zustand";
 
 export default function Chat() {
   const { chatId } = useParams();
@@ -22,12 +20,9 @@ export default function Chat() {
     data,
     readMessage,
   } = useMessages();
-  const { modalRef } = useSidebar();
 
   const [typed, setTyped] = useState("");
   const user = useUserStore((state) => state.user);
-
-  const [currentUserModal, setCurrentUserModal] = useState("me");
 
   const keyPairs = useKeyStore((state) => state.keyPairs);
 
@@ -68,7 +63,7 @@ export default function Chat() {
   }, [chatId, user, keyPairs, data?.pages]);
 
   return (
-    <section className="h-screen flex flex-col bg-[#1E1F22]">
+    <section className="flex h-screen min-w-0 flex-1 flex-col bg-[#1E1F22]">
       <ChatHeader
         companionInfo={companion as userInfo}
         userId={user?._id ?? ""}
@@ -76,7 +71,7 @@ export default function Chat() {
       <main
         onScroll={handleScroll}
         ref={messagesRef}
-        className="flex-1 w-[calc(100vw-290px)] min-h-0 max-h-[calc(100vh-110px)] flex flex-col px-[20px] py-[10px] pb-[20px] overflow-y-auto gap-[10px]"
+        className="flex min-h-0 flex-1 flex-col gap-[10px] overflow-y-auto px-[20px] py-[10px] pb-[20px]"
       >
         <Messages
           readMessage={readMessage}
@@ -84,7 +79,6 @@ export default function Chat() {
           messages={messages}
           userId={user?._id}
           companion={companion as userInfo}
-          setCurrentUserModal={setCurrentUserModal}
         />
         <div ref={bottomRef} />
       </main>
@@ -92,10 +86,6 @@ export default function Chat() {
         handleTyped={(value: string) => setTyped(value)}
         typed={typed}
         handleSendMessage={handleSendMessage}
-      />
-      <ProfileModal
-        user={currentUserModal === "me" ? user : companion}
-        ref={modalRef}
       />
     </section>
   );

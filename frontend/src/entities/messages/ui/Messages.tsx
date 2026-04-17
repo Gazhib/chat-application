@@ -1,15 +1,14 @@
-import type { MessageSchema } from "./message-bubble/model/types";
+import type { MessageSchema } from "./message-bubble/types";
 import type { userInfo } from "@/entities/user/model/userZustand";
-import MessageBubble from "./message-bubble/ui/MessageBubble";
+import MessageBubble from "./message-bubble/MessageBubble";
 import LoadingSpinner from "@/shared/spinner/ui/LoadingSpinner";
-import { useChatHeader } from "@/entities/chat/ui/header/model/useChatHeader";
+import { useChatHeader } from "@/entities/chat/ui/header/useChatHeader";
 
 interface Messages {
   isLoading: boolean;
   messages: MessageSchema[];
   userId?: string;
   companion: userInfo;
-  setCurrentUserModal?: (value: string) => void;
   readMessage: (messageId: string) => Promise<void>;
 }
 
@@ -18,7 +17,6 @@ export default function Messages({
   messages,
   userId = "",
   companion,
-  setCurrentUserModal,
   readMessage,
 }: Messages) {
   const { handleCall } = useChatHeader();
@@ -33,7 +31,6 @@ export default function Messages({
           return (
             <MessageBubble
               readMessage={readMessage}
-              setCurrentUserModal={setCurrentUserModal}
               messageId={message._id!}
               key={`${message.createdAt}-${message.meta}-${index}`}
               message={message}

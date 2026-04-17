@@ -1,6 +1,6 @@
 import { useChatInput } from "./input-modal/model/useChatInput";
 import { InputModal } from "./input-modal/ui/InputModal";
-import Toolbar from "./toolbar/ui/Toolbar";
+import Toolbar from "./toolbar/Toolbar";
 
 type Props = {
   typed: string;
@@ -18,8 +18,8 @@ export default function ChatInput({
     fileInputRef,
     sendMessage,
     onCloseModal,
-    modalRef,
     previewUrl,
+    isChatModalOpen,
   } = useChatInput({
     handleSendMessage,
   });
@@ -34,8 +34,8 @@ export default function ChatInput({
         fileInputRef={fileInputRef}
       />
       <InputModal
+        isModalOpen={isChatModalOpen}
         onCloseModal={onCloseModal}
-        ref={modalRef}
         caption={typed}
         picture={previewUrl}
         handleCaption={handleTyped}

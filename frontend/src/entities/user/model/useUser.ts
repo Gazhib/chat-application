@@ -12,6 +12,7 @@ export const useUser = () => {
   const navigate = useNavigate();
   const checkUser = async () => {
     try {
+      console.log(port)
       const response = await fetch(`${port}/me`, {
         method: "GET",
         credentials: "include",

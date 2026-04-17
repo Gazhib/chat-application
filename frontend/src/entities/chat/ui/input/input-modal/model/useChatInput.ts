@@ -1,4 +1,3 @@
-import type { modalRefScheme } from "@/shared/modal/ui/Modal";
 import { useEffect, useRef, useState } from "react";
 
 interface useChatInputScheme {
@@ -8,9 +7,10 @@ interface useChatInputScheme {
 export const useChatInput = ({ handleSendMessage }: useChatInputScheme) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const modalRef = useRef<modalRefScheme>(null);
-
   const [previewUrl, setPreviewUrl] = useState<string | undefined>(undefined);
+
+  const [isChatModalOpen, setIsChatModalOpen] = useState(false);
+
   const handleFile = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files.length > 0) {
       const preview = URL.createObjectURL(e.target.files[0]);
@@ -41,12 +41,12 @@ export const useChatInput = ({ handleSendMessage }: useChatInputScheme) => {
 
   const openModal = (preview: string) => {
     setPreviewUrl(preview);
-    modalRef.current?.openModal();
+    setIsChatModalOpen(true);
   };
 
   const onCloseModal = () => {
-    modalRef.current?.closeModal();
     setPreviewUrl(undefined);
+    setIsChatModalOpen(false);
   };
 
   const sendMessage = () => {
@@ -60,6 +60,6 @@ export const useChatInput = ({ handleSendMessage }: useChatInputScheme) => {
     fileInputRef,
     handleFile,
     previewUrl,
-    modalRef,
+    isChatModalOpen,
   };
 };

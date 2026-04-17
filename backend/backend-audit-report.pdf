@@ -1,0 +1,691 @@
+%PDF-1.4
+1 0 obj
+<< /Type /Catalog /Pages 2 0 R >>
+endobj
+2 0 obj
+<< /Type /Pages /Kids [5 0 R 7 0 R 9 0 R 11 0 R 13 0 R 15 0 R 17 0 R 19 0 R 21 0 R 23 0 R] /Count 10 >>
+endobj
+3 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>
+endobj
+4 0 obj
+<< /Length 1884 >>
+stream
+BT
+/F1 10 Tf
+14 TL
+50 752 Td
+(Backend Audit Report) Tj
+T* () Tj
+T* (Scope: backend/ only) Tj
+T* () Tj
+T* (Audit date: 2026-04-13) Tj
+T* () Tj
+T* (Reviewer focus: architecture, layering, async/await correctness, exception handling, validation,) Tj
+T* (auth/session handling, database safety, security, scalability, and maintainability.) Tj
+T* () Tj
+T* (2) Tj
+T* (Critical findings) Tj
+T* () Tj
+T* (12) Tj
+T* (High findings) Tj
+T* () Tj
+T* (10) Tj
+T* (Medium findings) Tj
+T* () Tj
+T* (1) Tj
+T* (Low findings) Tj
+T* () Tj
+T* (Executive Summary) Tj
+T* () Tj
+T* (The backend is functional but architecturally fragile. Core concerns such as authentication,) Tj
+T* (messaging, storage, and realtime signaling are tightly coupled into top-level route files, and) Tj
+T* (several trust boundaries are not enforced server-side.) Tj
+T* () Tj
+T* (The biggest risks are unauthorized data operations, unvalidated socket events, session/token) Tj
+T* (weaknesses, and race conditions around chat and call creation. The project also lacks the) Tj
+T* (structure needed to scale safely: there is no route/controller/service/repository separation,) Tj
+T* (no centralized validation or error policy, and schema/index design does not protect data) Tj
+T* (integrity.) Tj
+T* () Tj
+T* (Top Risks) Tj
+T* () Tj
+T* (- Any authenticated user can delete any message by ID.) Tj
+T* () Tj
+T* (- Socket events trust client payloads and allow unauthorized room joins and forged events.) Tj
+T* () Tj
+T* (- Refresh token handling is inconsistent and does not support rotation, revocation, or DB) Tj
+T* (revalidation.) Tj
+T* () Tj
+T* (- Chat and call creation rely on check-then-insert flows without uniqueness guarantees.) Tj
+T* () Tj
+T* (- The codebase is monolithic, making security fixes and regression-safe changes harder than) Tj
+T* (necessary.) Tj
+T* () Tj
+T* () Tj
+T* () Tj
+T* () Tj
+T* () Tj
+T* (Page 1 of 10) Tj
+ET
+endstream
+endobj
+5 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 3 0 R >> >> /Contents 4 0 R >>
+endobj
+6 0 obj
+<< /Length 2079 >>
+stream
+BT
+/F1 10 Tf
+14 TL
+50 752 Td
+() Tj
+T* (Detailed Findings) Tj
+T* () Tj
+T* (Critical) Tj
+T* () Tj
+T* (1. Message deletion is unauthorized) Tj
+T* () Tj
+T* (File: backend/app.js:405-412) Tj
+T* () Tj
+T* (Explanation: DELETE /messages/:messageId deletes by primary key only. It does not verify that) Tj
+T* (the caller owns the message or even belongs to the related chat.) Tj
+T* () Tj
+T* (Impact: Any authenticated user who learns a message ID can delete another user's data.) Tj
+T* () Tj
+T* (Recommended fix: Load the message, resolve the chat, verify sender or chat membership, and) Tj
+T* (consider soft-delete plus audit logging.) Tj
+T* () Tj
+T* (Critical) Tj
+T* () Tj
+T* (2. Socket events trust client input without authorization checks) Tj
+T* () Tj
+T* (File: backend/socket.js:59-145) Tj
+T* () Tj
+T* (Explanation: joinRoom, chatMessage, deleteMessage, and call-signaling events accept) Tj
+T* (client-supplied chat IDs, sender IDs, companion IDs, and targets without checking database) Tj
+T* (membership or ownership.) Tj
+T* () Tj
+T* (Impact: Clients can join arbitrary rooms, spoof messages, broadcast deletes, and interfere with) Tj
+T* (calls outside their authorization boundary.) Tj
+T* () Tj
+T* (Recommended fix: Resolve authorization on the server for every socket event, derive senderId) Tj
+T* (from socket.data.user, and reject room joins or emits when the user is not a verified member.) Tj
+T* () Tj
+T* (High) Tj
+T* () Tj
+T* (3. The backend is monolithic and lacks route/controller/service/repository separation) Tj
+T* () Tj
+T* (Files: backend/app.js:70-537, backend/auth.js:84-278, backend/bucket.js:22-41,) Tj
+T* (backend/call.js:3-15) Tj
+T* () Tj
+T* (Explanation: Route handlers directly mix HTTP concerns, auth, database queries, S3 access, and) Tj
+T* (domain logic. There is no consistent controller/service/repository boundary.) Tj
+T* () Tj
+T* (Impact: Security fixes, testing, reuse, and performance tuning become error-prone because every) Tj
+T* (endpoint is a custom implementation.) Tj
+T* () Tj
+T* () Tj
+T* () Tj
+T* () Tj
+T* () Tj
+T* () Tj
+T* (Page 2 of 10) Tj
+ET
+endstream
+endobj
+7 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 3 0 R >> >> /Contents 6 0 R >>
+endobj
+8 0 obj
+<< /Length 2356 >>
+stream
+BT
+/F1 10 Tf
+14 TL
+50 752 Td
+(Recommended fix: Split transport, application, and persistence concerns. Introduce routers,) Tj
+T* (controllers, services, repositories, and shared middleware for auth, validation, and error) Tj
+T* (handling.) Tj
+T* () Tj
+T* (High) Tj
+T* () Tj
+T* (4. Module format is inconsistent and relies on Node's typeless reparsing fallback) Tj
+T* () Tj
+T* (Files: backend/package.json:1-37, backend/app.js:9,19, backend/auth.js:10,) Tj
+T* (backend/socket.js:1-12, backend/call.js:1-3, backend/mailer.js:1-11) Tj
+T* () Tj
+T* (Explanation: The package has no "type" declaration, but some files use CommonJS and others use) Tj
+T* (ES module syntax. Node 22 reparses these files with a warning and added overhead.) Tj
+T* () Tj
+T* (Impact: Startup behavior is environment-dependent, tooling gets confused, and deployment on) Tj
+T* (stricter runtimes can break.) Tj
+T* () Tj
+T* (Recommended fix: Standardize on one module system. Either declare "type": "module" and convert) Tj
+T* (fully, or move ESM files to CommonJS.) Tj
+T* () Tj
+T* (High) Tj
+T* () Tj
+T* (5. Server startup does not fail fast or wait for database readiness) Tj
+T* () Tj
+T* (Files: backend/app.js:37-41,541-543, backend/auth.js:45-49,282-284) Tj
+T* () Tj
+T* (Explanation: MongoDB is connected in an unguarded async IIFE, while both servers start listening) Tj
+T* (independently. Connection failures are not handled explicitly.) Tj
+T* () Tj
+T* (Impact: The app can accept requests before persistence is ready, leading to noisy failures and) Tj
+T* (partial startup states.) Tj
+T* () Tj
+T* (Recommended fix: Bootstrap through a single async startup function that awaits DB connection,) Tj
+T* (logs failures clearly, and exits on fatal initialization errors.) Tj
+T* () Tj
+T* (High) Tj
+T* () Tj
+T* (6. Refresh token and session handling are insecure and inconsistent) Tj
+T* () Tj
+T* (File: backend/auth.js:68-77,240-278) Tj
+T* () Tj
+T* (Explanation: Refresh tokens are signed for one week but the cookie max age is one hour. Tokens) Tj
+T* (are not rotated, not persisted, not revocable server-side, and refresh trusts old JWT payload) Tj
+T* (data instead of reloading the user from the database.) Tj
+T* () Tj
+T* (Impact: Session behavior is unpredictable, revoked or changed users can stay authorized, and) Tj
+T* () Tj
+T* () Tj
+T* () Tj
+T* () Tj
+T* () Tj
+T* (Page 3 of 10) Tj
+ET
+endstream
+endobj
+9 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 3 0 R >> >> /Contents 8 0 R >>
+endobj
+10 0 obj
+<< /Length 2207 >>
+stream
+BT
+/F1 10 Tf
+14 TL
+50 752 Td
+(stolen refresh tokens remain useful until expiry.) Tj
+T* () Tj
+T* (Recommended fix: Store refresh sessions server-side, rotate on use, revoke on logout, align) Tj
+T* (cookie lifetime with token lifetime, and rebuild access-token claims from fresh DB state.) Tj
+T* () Tj
+T* (High) Tj
+T* () Tj
+T* (7. Login does not enforce email verification) Tj
+T* () Tj
+T* (File: backend/auth.js:98-130) Tj
+T* () Tj
+T* (Explanation: The login flow validates credentials but never blocks users whose isVerified flag) Tj
+T* (is still false.) Tj
+T* () Tj
+T* (Impact: The email verification flow becomes optional in practice, weakening account proof and) Tj
+T* (abuse controls.) Tj
+T* () Tj
+T* (Recommended fix: Reject unverified logins or place them into a restricted state until) Tj
+T* (verification succeeds.) Tj
+T* () Tj
+T* (High) Tj
+T* () Tj
+T* (8. Registration and verification flow is unsafe under failure and uses weak verification-code) Tj
+T* (handling) Tj
+T* () Tj
+T* (File: backend/auth.js:174-198,201-237) Tj
+T* () Tj
+T* (Explanation: Verification codes are generated with Math.random\(\), stored in plaintext, and sent) Tj
+T* (after the user is already persisted. If email delivery fails, the database still contains a) Tj
+T* (blocked, unverified account. Expired codes trigger user deletion.) Tj
+T* () Tj
+T* (Impact: Registration can dead-end users, verification secrets are weaker than necessary, and) Tj
+T* (expired verification attempts can destroy account records unexpectedly.) Tj
+T* () Tj
+T* (Recommended fix: Generate cryptographically strong codes, store only a hash, add retry/resend) Tj
+T* (and attempt limits, and use a transaction or compensating cleanup strategy around user creation) Tj
+T* (plus email dispatch.) Tj
+T* () Tj
+T* (High) Tj
+T* () Tj
+T* (9. Message creation mixes unvalidated parsing with non-atomic storage operations) Tj
+T* () Tj
+T* (File: backend/app.js:70-127) Tj
+T* () Tj
+T* (Explanation: The route blindly runs JSON.parse\(message\) on multipart input and then performs S3) Tj
+T* (upload plus MongoDB save in one handler without compensation. If one step succeeds and the other) Tj
+T* () Tj
+T* () Tj
+T* () Tj
+T* () Tj
+T* () Tj
+T* (Page 4 of 10) Tj
+ET
+endstream
+endobj
+11 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 3 0 R >> >> /Contents 10 0 R >>
+endobj
+12 0 obj
+<< /Length 2077 >>
+stream
+BT
+/F1 10 Tf
+14 TL
+50 752 Td
+(fails, state becomes inconsistent.) Tj
+T* () Tj
+T* (Impact: Malformed requests can trigger 500s, orphan S3 objects can accumulate, and message state) Tj
+T* (can diverge from stored media.) Tj
+T* () Tj
+T* (Recommended fix: Validate payload structure before parsing, wrap the flow in clear error) Tj
+T* (handling, and add compensating delete or a durable outbox/job strategy for media persistence.) Tj
+T* () Tj
+T* (High) Tj
+T* () Tj
+T* (10. Direct-chat creation has no uniqueness or companion validation) Tj
+T* () Tj
+T* (File: backend/app.js:239-250) Tj
+T* () Tj
+T* (Explanation: POST /chats inserts a new direct chat immediately. It does not verify that the) Tj
+T* (companion exists, block self-chat creation, or ensure a direct chat between the same two users) Tj
+T* (does not already exist.) Tj
+T* () Tj
+T* (Impact: Duplicate conversations, invalid memberships, and inconsistent UX are likely as traffic) Tj
+T* (grows.) Tj
+T* () Tj
+T* (Recommended fix: Validate the companion user, normalize member ordering for direct chats,) Tj
+T* (enforce a uniqueness constraint, and return the existing chat when present.) Tj
+T* () Tj
+T* (High) Tj
+T* () Tj
+T* (11. Call creation uses a race-prone check-then-insert pattern) Tj
+T* () Tj
+T* (Files: backend/app.js:458-484, backend/models.js:155-174) Tj
+T* () Tj
+T* (Explanation: The code performs separate exists checks before inserting a call room, and there is) Tj
+T* (no unique index on roomId or active-call membership state.) Tj
+T* () Tj
+T* (Impact: Concurrent requests can create overlapping or duplicate calls for the same users.) Tj
+T* () Tj
+T* (Recommended fix: Enforce uniqueness at the database layer and create rooms through an atomic) Tj
+T* (operation or transaction.) Tj
+T* () Tj
+T* (High) Tj
+T* () Tj
+T* (12. Call disconnect endpoint never completes the HTTP response) Tj
+T* () Tj
+T* (File: backend/app.js:505-511) Tj
+T* () Tj
+T* (Explanation: DELETE /calls/:callId awaits callDisconnect and then returns nothing.) Tj
+T* () Tj
+T* () Tj
+T* () Tj
+T* () Tj
+T* () Tj
+T* () Tj
+T* (Page 5 of 10) Tj
+ET
+endstream
+endobj
+13 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 3 0 R >> >> /Contents 12 0 R >>
+endobj
+14 0 obj
+<< /Length 2121 >>
+stream
+BT
+/F1 10 Tf
+14 TL
+50 752 Td
+(Impact: Clients can hang until timeout and may retry, producing duplicate side effects.) Tj
+T* () Tj
+T* (Recommended fix: Send a deterministic success or failure response after the disconnect logic) Tj
+T* (finishes.) Tj
+T* () Tj
+T* (High) Tj
+T* () Tj
+T* (13. Message status patching can crash and mis-handle membership checks) Tj
+T* () Tj
+T* (File: backend/app.js:317-338) Tj
+T* () Tj
+T* (Explanation: The route reads message.chatId before confirming that message exists. It also uses) Tj
+T* (chat.membershipIds.includes\(userId\), which is unreliable when comparing ObjectIds to strings.) Tj
+T* () Tj
+T* (Impact: Missing records can throw, and valid members may be denied or handled inconsistently.) Tj
+T* () Tj
+T* (Recommended fix: Return early when the message is missing and compare normalized strings or use) Tj
+T* (MongoDB membership queries instead of in-memory includes.) Tj
+T* () Tj
+T* (High) Tj
+T* () Tj
+T* (14. Core collections are missing data-integrity and query indexes) Tj
+T* () Tj
+T* (File: backend/models.js:3-181) Tj
+T* () Tj
+T* (Explanation: Users do not enforce unique email or login, call rooms do not enforce unique) Tj
+T* (roomId, and common filters such as chatId, membershipIds, and roomId are not indexed.) Tj
+T* () Tj
+T* (Impact: Concurrency can create duplicates, and read performance will degrade as collections) Tj
+T* (grow.) Tj
+T* () Tj
+T* (Recommended fix: Add unique indexes for identity fields and targeted query indexes for frequent) Tj
+T* (lookups.) Tj
+T* () Tj
+T* (High) Tj
+T* () Tj
+T* (15. There is no centralized validation or error-handling policy) Tj
+T* () Tj
+T* (Files: backend/app.js:70-537, backend/auth.js:84-278) Tj
+T* () Tj
+T* (Explanation: Validation is ad hoc and duplicated across handlers, while exceptions are either) Tj
+T* (uncaught, converted to raw JSON objects, or depend on framework defaults.) Tj
+T* () Tj
+T* (Impact: API behavior is inconsistent, errors are harder to reason about, and security bugs hide) Tj
+T* (in endpoint-specific validation code.) Tj
+T* () Tj
+T* () Tj
+T* () Tj
+T* () Tj
+T* () Tj
+T* () Tj
+T* (Page 6 of 10) Tj
+ET
+endstream
+endobj
+15 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 3 0 R >> >> /Contents 14 0 R >>
+endobj
+16 0 obj
+<< /Length 2103 >>
+stream
+BT
+/F1 10 Tf
+14 TL
+50 752 Td
+(Recommended fix: Adopt a schema validator such as Zod/Joi, validate params/query/body centrally,) Tj
+T* (and add a single error middleware that maps internal failures to safe HTTP responses.) Tj
+T* () Tj
+T* (High) Tj
+T* () Tj
+T* (16. JWT payloads contain mutable profile data and use inconsistent role casing) Tj
+T* () Tj
+T* (File: backend/auth.js:116-124,223-231,253-259) Tj
+T* () Tj
+T* (Explanation: Access and refresh tokens embed description, profilePicture, isVerified, and role) Tj
+T* (values that differ between flows \(user vs USER\).) Tj
+T* () Tj
+T* (Impact: Cookies grow unnecessarily, authorization data becomes stale, and downstream role checks) Tj
+T* (can become inconsistent.) Tj
+T* () Tj
+T* (Recommended fix: Keep JWT claims minimal and stable, typically user ID, token ID, and maybe) Tj
+T* (role; derive mutable profile data from the database when needed.) Tj
+T* () Tj
+T* (Medium) Tj
+T* () Tj
+T* (17. The users list route has a key-type bug and ineffective filtering) Tj
+T* () Tj
+T* (File: backend/app.js:141-147,175-195) Tj
+T* () Tj
+T* (Explanation: The map stores chat IDs under an ObjectId key but later reads them using string) Tj
+T* (keys, so lookups can return undefined. The subsequent users.filter\(...\) result is also ignored.) Tj
+T* () Tj
+T* (Impact: Chat metadata can be missing or misassigned, and the returned ordering can be wrong.) Tj
+T* () Tj
+T* (Recommended fix: Normalize keys with toString\(\) on both insert and lookup, and assign the) Tj
+T* (filtered result back before sorting or returning.) Tj
+T* () Tj
+T* (Medium) Tj
+T* () Tj
+T* (18. User search does not await async profile-picture enrichment) Tj
+T* () Tj
+T* (File: backend/app.js:223-230) Tj
+T* () Tj
+T* (Explanation: Promise.all\(...\) is called but not awaited before the response is sent.) Tj
+T* () Tj
+T* (Impact: Clients may receive unresolved or missing signed URLs.) Tj
+T* () Tj
+T* (Recommended fix: Await the Promise.all result or map synchronously before responding.) Tj
+T* () Tj
+T* (Medium) Tj
+T* () Tj
+T* () Tj
+T* () Tj
+T* () Tj
+T* () Tj
+T* () Tj
+T* (Page 7 of 10) Tj
+ET
+endstream
+endobj
+17 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 3 0 R >> >> /Contents 16 0 R >>
+endobj
+18 0 obj
+<< /Length 2153 >>
+stream
+BT
+/F1 10 Tf
+14 TL
+50 752 Td
+(19. Message pagination validation is weak and raw errors leak to clients) Tj
+T* () Tj
+T* (File: backend/app.js:255-315) Tj
+T* () Tj
+T* (Explanation: req.query.limit is clamped without explicit numeric parsing, beforeId is not) Tj
+T* (validated, and the catch block returns the raw error object to the caller.) Tj
+T* () Tj
+T* (Impact: Invalid input can produce unstable behavior and expose internal failure details.) Tj
+T* () Tj
+T* (Recommended fix: Parse and validate pagination inputs explicitly, and return sanitized API) Tj
+T* (errors only.) Tj
+T* () Tj
+T* (Medium) Tj
+T* () Tj
+T* (20. The /me handler continues after unauthorized branches and assumes the user document exists) Tj
+T* () Tj
+T* (File: backend/app.js:513-536) Tj
+T* () Tj
+T* (Explanation: The unauthorized response path does not return, and the code immediately) Tj
+T* (dereferences fields on the database user without checking whether the user still exists.) Tj
+T* () Tj
+T* (Impact: Requests can fall through into secondary failures or double-response behavior.) Tj
+T* () Tj
+T* (Recommended fix: Return immediately after 401, reload the user safely, and handle not-found) Tj
+T* (cases explicitly.) Tj
+T* () Tj
+T* (Medium) Tj
+T* () Tj
+T* (21. Profile-picture upload handling is brittle and memory-heavy) Tj
+T* () Tj
+T* (File: backend/app.js:43-50,433-455) Tj
+T* () Tj
+T* (Explanation: Multer uses memoryStorage\(\) with up to 10 MB per file, and the route does not) Tj
+T* (reject requests where req.file is missing after filtering.) Tj
+T* () Tj
+T* (Impact: Concurrent uploads can create memory pressure, and invalid files can fail with confusing) Tj
+T* (downstream behavior.) Tj
+T* () Tj
+T* (Recommended fix: Validate presence explicitly, prefer streaming or temporary disk storage for) Tj
+T* (larger files, and return a clear 4xx error when MIME validation fails.) Tj
+T* () Tj
+T* (Medium) Tj
+T* () Tj
+T* (22. CORS and CSRF protections are brittle for a cookie-authenticated API) Tj
+T* () Tj
+T* (Files: backend/app.js:21-30,52-64, backend/auth.js:15-24,57-77, backend/socket.js:15-21) Tj
+T* () Tj
+T* () Tj
+T* () Tj
+T* () Tj
+T* () Tj
+T* (Page 8 of 10) Tj
+ET
+endstream
+endobj
+19 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 3 0 R >> >> /Contents 18 0 R >>
+endobj
+20 0 obj
+<< /Length 2194 >>
+stream
+BT
+/F1 10 Tf
+14 TL
+50 752 Td
+() Tj
+T* (Explanation: Allowed origins include raw port values from env vars instead of canonical origins,) Tj
+T* (and state-changing routes rely on cookies without a CSRF token strategy.) Tj
+T* () Tj
+T* (Impact: Environment configuration is easy to misapply, and cookie-based auth remains exposed to) Tj
+T* (cross-site request risks.) Tj
+T* () Tj
+T* (Recommended fix: Centralize origin configuration as full URLs, validate it at startup, and add) Tj
+T* (CSRF defenses or move to a safer token transport strategy.) Tj
+T* () Tj
+T* (Medium) Tj
+T* () Tj
+T* (23. Realtime presence and call state are in-process only and break under scale) Tj
+T* () Tj
+T* (File: backend/socket.js:13-15,53-58,113-157) Tj
+T* () Tj
+T* (Explanation: onlineUsers and rooms are plain in-memory objects. A single user is mapped to one) Tj
+T* (socket ID only.) Tj
+T* () Tj
+T* (Impact: Multi-instance deployments lose consistency, restarts drop state, and one tab) Tj
+T* (disconnecting can mark an otherwise active user offline.) Tj
+T* () Tj
+T* (Recommended fix: Move ephemeral presence/call coordination to Redis or another shared adapter) Tj
+T* (and support multiple sockets per user.) Tj
+T* () Tj
+T* (Medium) Tj
+T* () Tj
+T* (24. Schema references are internally inconsistent and one timestamp default is incorrect) Tj
+T* () Tj
+T* (File: backend/models.js:68-73,156-169) Tj
+T* () Tj
+T* (Explanation: membershipIds are populated with user IDs in application code, but the schema) Tj
+T* (references memberships. Also, callRoomSchema.createdAt uses default: new Date\(\), which is) Tj
+T* (evaluated once when the schema is created.) Tj
+T* () Tj
+T* (Impact: Population semantics are misleading, model intent is unclear, and all call rooms can) Tj
+T* (inherit the same default timestamp.) Tj
+T* () Tj
+T* (Recommended fix: Correct the refs to match stored IDs and replace new Date\(\) with Date.now.) Tj
+T* () Tj
+T* (Medium) Tj
+T* () Tj
+T* (25. Transaction safety is weak across multi-step domain operations) Tj
+T* () Tj
+T* (Files: backend/auth.js:181-198,201-213, backend/app.js:100-126,475-483, backend/call.js:3-15) Tj
+T* () Tj
+T* () Tj
+T* () Tj
+T* () Tj
+T* () Tj
+T* () Tj
+T* (Page 9 of 10) Tj
+ET
+endstream
+endobj
+21 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 3 0 R >> >> /Contents 20 0 R >>
+endobj
+22 0 obj
+<< /Length 2593 >>
+stream
+BT
+/F1 10 Tf
+14 TL
+50 752 Td
+(Explanation: Several workflows update multiple systems or documents in sequence without) Tj
+T* (transactions or compensation: registration plus email dispatch, media upload plus message save,) Tj
+T* (and call/message teardown.) Tj
+T* () Tj
+T* (Impact: Partial failures leave persistent data in contradictory states.) Tj
+T* () Tj
+T* (Recommended fix: Use MongoDB transactions where the database is the source of truth, and apply) Tj
+T* (compensating actions or durable workflows when external systems such as S3 or SMTP are involved.) Tj
+T* () Tj
+T* (Low) Tj
+T* () Tj
+T* (26. Tooling and hygiene gaps add avoidable maintenance cost) Tj
+T* () Tj
+T* (Files: backend/package.json:1-36, backend/auth.js:7,11, backend/app.js:134,282-302) Tj
+T* () Tj
+T* (Explanation: There are no test, lint, or build scripts. Some imports and dependencies are unused) Tj
+T* (or redundant, and debug remnants remain in the code.) Tj
+T* () Tj
+T* (Impact: Regressions are easier to introduce and harder to catch automatically.) Tj
+T* () Tj
+T* (Recommended fix: Add linting and test scripts, remove unused dependencies/imports, and clean) Tj
+T* (debug-only code before release.) Tj
+T* () Tj
+T* (Prioritized Action Plan) Tj
+T* () Tj
+T* (- 1. Close the security holes first: add authorization to message deletion, validate every) Tj
+T* (socket event against chat/call membership, and enforce email verification on login.) Tj
+T* () Tj
+T* (- 2. Stabilize auth/session behavior: redesign refresh tokens with rotation and server-side) Tj
+T* (session records, minimize JWT claims, and add CSRF protection for cookie-authenticated writes.) Tj
+T* () Tj
+T* (- 3. Protect data integrity: add unique/index constraints, fix direct-chat and call creation) Tj
+T* (races, and correct schema refs plus timestamp defaults.) Tj
+T* () Tj
+T* (- 4. Introduce platform-level safety rails: centralize validation, add error middleware, and) Tj
+T* (make startup fail fast when configuration or DB connectivity is invalid.) Tj
+T* () Tj
+T* (- 5. Restructure the codebase for maintainability: split) Tj
+T* (routers/controllers/services/repositories, isolate storage and auth utilities, and make) Tj
+T* (multi-step flows transactional or compensating.) Tj
+T* () Tj
+T* (- 6. Improve scalability and operability: move realtime state out of process memory, support) Tj
+T* (multi-socket presence, and add automated tests plus linting.) Tj
+T* () Tj
+T* (This report intentionally excludes everything outside backend/, per the requested scope.) Tj
+T* () Tj
+T* () Tj
+T* () Tj
+T* () Tj
+T* () Tj
+T* () Tj
+T* (Page 10 of 10) Tj
+ET
+endstream
+endobj
+23 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 3 0 R >> >> /Contents 22 0 R >>
+endobj
+xref
+0 24
+0000000000 65535 f 
+0000000009 00000 n 
+0000000058 00000 n 
+0000000177 00000 n 
+0000000247 00000 n 
+0000002183 00000 n 
+0000002309 00000 n 
+0000004440 00000 n 
+0000004566 00000 n 
+0000006974 00000 n 
+0000007100 00000 n 
+0000009360 00000 n 
+0000009488 00000 n 
+0000011618 00000 n 
+0000011746 00000 n 
+0000013920 00000 n 
+0000014048 00000 n 
+0000016204 00000 n 
+0000016332 00000 n 
+0000018538 00000 n 
+0000018666 00000 n 
+0000020913 00000 n 
+0000021041 00000 n 
+0000023687 00000 n 
+trailer
+<< /Size 24 /Root 1 0 R >>
+startxref
+23815
+%%EOF
