@@ -19,7 +19,13 @@ export const useSidebar = () => {
     window.location.href = "/chats";
   };
 
-  const handleExtension = () => {
+  const toggleExtension = (state?: boolean) => {
+
+    if (state !== undefined) {
+      setIsSidebarExtended(state);
+      return;
+    }
+
     setIsSidebarExtended((prev) => !prev);
   };
 
@@ -27,7 +33,7 @@ export const useSidebar = () => {
   return {
     isSidebarExtended,
     handleLogout,
-    handleExtension,
+    toggleExtension,
     handleNavigateChats,
   };
 };

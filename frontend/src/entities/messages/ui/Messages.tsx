@@ -9,7 +9,6 @@ interface Messages {
   messages: MessageSchema[];
   userId?: string;
   companion: userInfo;
-  setCurrentUserModal?: (value: string) => void;
   readMessage: (messageId: string) => Promise<void>;
 }
 
@@ -18,7 +17,6 @@ export default function Messages({
   messages,
   userId = "",
   companion,
-  setCurrentUserModal,
   readMessage,
 }: Messages) {
   const { handleCall } = useChatHeader();
@@ -33,7 +31,6 @@ export default function Messages({
           return (
             <MessageBubble
               readMessage={readMessage}
-              setCurrentUserModal={setCurrentUserModal}
               messageId={message._id!}
               key={`${message.createdAt}-${message.meta}-${index}`}
               message={message}

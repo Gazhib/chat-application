@@ -19,7 +19,14 @@ export const ProfileModal = ({
   const isMe = user?._id === meUser?._id;
 
   return (
-    <Modal open={isModalOpen} onCancel={handleCancel} footer={null} centered>
+    <Modal
+      styles={{ container: { backgroundColor: "transparent", padding: 0 } }}
+      open={isModalOpen}
+      onCancel={handleCancel}
+      footer={null}
+      centered
+      width={350}
+    >
       <main className="bg-[#18191A] px-[20px] py-[20px] w-[350px] h-[1000px] text-white">
         <UserInfo isMe={isMe} user={user} />
         <Description isMe={isMe} userDescription={user?.description ?? ""} />

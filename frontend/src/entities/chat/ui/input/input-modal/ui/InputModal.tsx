@@ -20,7 +20,7 @@ export const InputModal = ({
   isModalOpen,
 }: InputModalScheme) => {
   return (
-    <Modal open={isModalOpen} onCancel={onCloseModal} footer={null} centered>
+    <Modal styles={{container: {background: "transparent", padding: 0}}} open={isModalOpen} onCancel={onCloseModal} footer={null} centered>
       <main className="bg-[#242526] px-[20px] py-[20px]">
         <img src={picture} className="max-h-[300px]" />
         <CaptionField

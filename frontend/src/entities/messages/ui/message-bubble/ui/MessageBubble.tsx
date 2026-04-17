@@ -10,12 +10,12 @@ import ContextMenu from "./components/context-menu/ui/ContextMenu";
 import CallMessage from "./components/CallMessage";
 
 import { Popover } from "antd";
+import { ProfileModal } from "@/entities/user/ui/ProfileModal";
 type Props = {
   message: MessageSchema;
   place: string;
   messageId: string;
   companion: userInfo;
-  setCurrentUserModal?: (value: string) => void;
   handleCall?: () => void;
   readMessage: (messageId: string) => Promise<void>;
 };
@@ -24,7 +24,6 @@ export default function MessageBubble({
   place,
   messageId,
   companion,
-  setCurrentUserModal = () => {},
   handleCall = () => {},
   readMessage,
 }: Props) {
@@ -35,13 +34,13 @@ export default function MessageBubble({
   });
 
   const [isPhotoModalOpen, setIsPhotoModalOpen] = useState(false);
+  const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
   const time = new Date(message.createdAt).toLocaleTimeString().slice(0, 5);
   const user = useUserStore((state) => state.user);
   const isMe = place === "right";
 
   const handleOpenModal = () => {
-    setCurrentUserModal(isMe ? "me" : "companion");
-    // modalRef.current?.openModal();
+    setIsProfileModalOpen(true);
   };
 
   const handleOpenPhoto = () => {
@@ -73,65 +72,72 @@ export default function MessageBubble({
   }, []);
 
   return (
-    <div
-      className={`max-w-[65%] flex ${
-        isMe ? "flex-row-reverse self-end" : "flex-row self-start"
-      } gap-[10px] relative`}
-    >
-      <ProfilePicture
-        handleOpenModal={handleOpenModal}
-        picture={
-          isMe ? user?.profilePicture || pp : companion?.profilePicture || pp
-        }
-      />
-      <Popover
-        content={<ContextMenu message={message} />}
-        placement="leftTop"
-        onOpenChange={() => {
-          if (isMe) handleClickContextMenu();
-        }}
-        open={isContextMenu}
-        trigger={"click"}
-        overlayInnerStyle={{ backgroundColor: "transparent", padding: 0 }}
+    <>
+      <div
+        className={`max-w-[65%] flex ${
+          isMe ? "flex-row-reverse self-end" : "flex-row self-start"
+        } gap-[10px] relative`}
       >
-        <section
-          className={`px-[15px] py-[10px] rounded-t-[16px] text-[#E4E6EB] relative w-fit overflow-hidden items-end flex ${
-            isMe
-              ? "bg-[#3A3B3C] rounded-bl-[16px]"
-              : "bg-[#2F3136] rounded-br-[16px] flex-col"
-          }`}
+        <ProfilePicture
+          handleOpenModal={handleOpenModal}
+          picture={
+            isMe ? user?.profilePicture || pp : companion?.profilePicture || pp
+          }
+        />
+        <Popover
+          content={<ContextMenu message={message} />}
+          placement="leftTop"
+          onOpenChange={() => {
+            if (isMe) handleClickContextMenu();
+          }}
+          open={isContextMenu}
+          trigger={"click"}
+          styles={{ container: { backgroundColor: "transparent", padding: 0 } }}
         >
-          {!isMe && (
-            <div
-              onClick={handleOpenModal}
-              className="text-blue-600 text-[12px] cursor-pointer self-start"
-            >
-              {companion.login}
-            </div>
-          )}
-          {message.messageType === "call" ? (
-            <CallMessage
-              handleCall={handleCall}
-              time={time}
-              callId={message.meta}
-              finishedAt={message.finishedAt}
-            />
-          ) : (
-            <Meta
-              time={time}
-              picture={message.picture}
-              meta={message.meta}
-              encryptionStatus={message.encryptionStatus}
-              handleOpenPhoto={handleOpenPhoto}
-            />
-          )}
-        </section>
-      </Popover>
-      <PhotoModal
-        picture={message.picture}
-        isModalOpen={isPhotoModalOpen}
-        handleCancel={() => setIsPhotoModalOpen(false)}
+          <section
+            className={`px-[15px] py-[10px] rounded-t-[16px] text-[#E4E6EB] relative w-fit overflow-hidden items-end flex ${
+              isMe
+                ? "bg-[#3A3B3C] rounded-bl-[16px]"
+                : "bg-[#2F3136] rounded-br-[16px] flex-col"
+            }`}
+          >
+            {!isMe && (
+              <div
+                onClick={handleOpenModal}
+                className="text-blue-600 text-[12px] cursor-pointer self-start"
+              >
+                {companion.login}
+              </div>
+            )}
+            {message.messageType === "call" ? (
+              <CallMessage
+                handleCall={handleCall}
+                time={time}
+                callId={message.meta}
+                finishedAt={message.finishedAt}
+              />
+            ) : (
+              <Meta
+                time={time}
+                picture={message.picture}
+                meta={message.meta}
+                encryptionStatus={message.encryptionStatus}
+                handleOpenPhoto={handleOpenPhoto}
+              />
+            )}
+          </section>
+        </Popover>
+        <PhotoModal
+          picture={message.picture}
+          isModalOpen={isPhotoModalOpen}
+          handleCancel={() => setIsPhotoModalOpen(false)}
+        />
+      </div>
+      <ProfileModal
+        user={isMe ? user : companion}
+        isModalOpen={isProfileModalOpen}
+        handleCancel={() => setIsProfileModalOpen(false)}
       />
-    </div>
+    </>
   );
 }
