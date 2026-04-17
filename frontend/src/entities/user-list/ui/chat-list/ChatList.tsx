@@ -1,4 +1,4 @@
-import { usePersonalSocket } from "@/util/model/socket/usePersonalSocket";
+import { usePersonalSocket } from "@/util/model/usePersonalSocket";
 import { useChatSidebar, type User } from "../../model/useChatSidebar";
 import List from "./List";
 

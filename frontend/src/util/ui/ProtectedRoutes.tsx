@@ -3,8 +3,10 @@ import { useUser } from "@/entities/user/model/useUser";
 import { useEffect, useState } from "react";
 import { Navigate, Outlet, useNavigate } from "react-router";
 
-export const port = import.meta.env.VITE_APP_DF_PORT;
-export const authPort = import.meta.env.VITE_APP_AUTH_PORT;
+export const port =
+  import.meta.env.VITE_APP_DF_PORT || "http://localhost:3000";
+export const authPort =
+  import.meta.env.VITE_APP_AUTH_PORT || "http://localhost:4000";
 
 export default function ProtectedRoutes() {
   const [checked, setChecked] = useState(false);

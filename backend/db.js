@@ -1,13 +1,19 @@
 const { Pool } = require("pg");
 require("dotenv").config({ path: "../.env" });
 
-const pool = new Pool({
-  host: "localhost",
-  port: 5432,
-  user: "postgres",
-  password: "decentra_password123",
-  database: "chatenko",
-});
+const connectionString = process.env.PG_CONNECTION;
+
+const pool = new Pool(
+  connectionString
+    ? { connectionString }
+    : {
+        host: process.env.PGHOST || "localhost",
+        port: Number(process.env.PGPORT || 5432),
+        user: process.env.PGUSER || "postgres",
+        password: process.env.PGPASSWORD || "decentra_password123",
+        database: process.env.PGDATABASE || "chatenko",
+      }
+);
 
 pool.on("error", (err) => {
   console.error("Unexpected PostgreSQL client error", err);

@@ -12,8 +12,8 @@ import {
   getSharedKey,
   isPeerPublicKeyUnavailableError,
 } from "@/entities/chat/model/encryption";
-import { socket } from "@/util/model/socket/socket";
 import { handleUpdateUsersList } from "./useMessages";
+import { socket } from "@/util/model/socket";
 
 export const useSocketMessages = () => {
   const messages = useMessageStore((state) => state.messages);

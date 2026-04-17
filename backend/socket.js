@@ -2,10 +2,10 @@ const { Server } = require("socket.io");
 const cookie = require("cookie");
 const jwt = require("jsonwebtoken");
 const { callDisconnect } = require("./call");
+const { createCorsOriginValidator } = require("./utils/origins");
 require("dotenv").config({ path: "../.env" });
 
 const accessSecretKey = process.env.ACCESS_SECRET;
-const port = process.env.DF_PORT;
 
 function initSocket(httpServer) {
   const onlineUsers = {};
@@ -14,7 +14,7 @@ function initSocket(httpServer) {
   const io = new Server(httpServer, {
     path: "/socket.io",
     cors: {
-      origin: ["http://localhost:5173", `http://localhost:${port}`],
+      origin: createCorsOriginValidator(),
       methods: ["GET", "POST"],
       credentials: true,
     },

@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
-import { usePersonalSocket } from "@util/model/socket/usePersonalSocket";
 import type { userInfo } from "@entities/user/model/userZustand";
 import { useChatHeader } from "./useChatHeader";
+import { usePersonalSocket } from "@/util/model/usePersonalSocket";
 type Props = {
   companionInfo: userInfo;
   userId: string;
