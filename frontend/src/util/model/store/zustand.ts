@@ -1,24 +1,30 @@
 import { getKeyPair } from "@/entities/chat/model/encryption";
 import { create } from "zustand";
 
-interface keyStoreState {
+interface KeyStoreState {
   keyPairs?: {
+    publicKey: CryptoKey;
     privateKey: CryptoKey;
   };
-  sharedKey?: CryptoKey;
-  getKeyPairs: () => void;
-  changeSharedKey: (key: CryptoKey) => void;
+  sharedKeys: Map<string, CryptoKey>;
+  getKeyPairs: () => Promise<void>;
+  setSharedKeyForChat: (chatId: string, key: CryptoKey) => void;
 }
 
-export const useKeyStore = create<keyStoreState>((set) => ({
+export const useKeyStore = create<KeyStoreState>((set) => ({
   keyPairs: undefined,
+  sharedKeys: new Map(),
+
   getKeyPairs: async () => {
     const keys = await getKeyPair();
     set({ keyPairs: keys });
   },
-  sharedKey: undefined,
-  changeSharedKey: async (key: CryptoKey) => {
-    set({ sharedKey: key });
+
+  setSharedKeyForChat: (chatId: string, key: CryptoKey) => {
+    set((state) => {
+      const updated = new Map(state.sharedKeys);
+      updated.set(chatId, key);
+      return { sharedKeys: updated };
+    });
   },
 }));
-

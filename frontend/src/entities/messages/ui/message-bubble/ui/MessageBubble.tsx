@@ -118,6 +118,7 @@ export default function MessageBubble({
             time={time}
             picture={message.picture}
             meta={message.meta}
+            encryptionStatus={message.encryptionStatus}
             handleOpenPhoto={handleOpenPhoto}
           />
         )}

@@ -1,17 +1,16 @@
-import { Server } from "socket.io";
-import * as cookie from "cookie";
-import jwt from "jsonwebtoken";
-import dotenv from "dotenv";
-import { callDisconnect } from "./call.js";
+const { Server } = require("socket.io");
+const cookie = require("cookie");
+const jwt = require("jsonwebtoken");
+const { callDisconnect } = require("./call");
+require("dotenv").config({ path: "../.env" });
 
-dotenv.config({ path: "../.env" });
 const accessSecretKey = process.env.ACCESS_SECRET;
-
 const port = process.env.DF_PORT;
 
-export function initSocket(httpServer) {
+function initSocket(httpServer) {
   const onlineUsers = {};
   const rooms = {};
+
   const io = new Server(httpServer, {
     path: "/socket.io",
     cors: {
@@ -24,28 +23,24 @@ export function initSocket(httpServer) {
   });
 
   io.engine.on("connection_error", (err) => {
-    console.error(
-      "Socket.IO connection error:",
-      err.code,
-      err.message,
-      err.context
-    );
+    console.error("Socket.IO connection error:", err.code, err.message, err.context);
   });
 
   io.use((socket, next) => {
     const raw = socket.handshake.headers.cookie;
     if (!raw) return next(new Error("No auth cookie"));
+
     const parsed = cookie.parse(raw);
     const token = parsed.accessToken;
-
     if (!token) return next(new Error("No auth token"));
+
     try {
       if (accessSecretKey) {
         const user = jwt.verify(token, accessSecretKey);
         socket.data.user = { id: user.sub, email: user.email };
         next();
       }
-    } catch (e) {
+    } catch {
       next(new Error("Auth error"));
     }
   });
@@ -53,24 +48,26 @@ export function initSocket(httpServer) {
   io.on("connection", (socket) => {
     const userId = socket.data.user.id;
     let userCallRoom;
+
     onlineUsers[userId] = socket.id;
     io.emit("onlineList", { onlineUsersIds: Object.keys(onlineUsers) });
 
-    socket.on("joinRoom", async ({ chatId, companionId }) => {
+    socket.on("joinRoom", ({ chatId, companionId }) => {
       socket.join(chatId);
       if (companionId in onlineUsers) {
-        const companionSocketId = onlineUsers[companionId];
-        const companionSocket = io.sockets.sockets.get(companionSocketId);
-        if (companionSocket) {
-          companionSocket.join(chatId);
-        }
+        const companionSocket = io.sockets.sockets.get(onlineUsers[companionId]);
+        if (companionSocket) companionSocket.join(chatId);
       }
     });
 
     socket.on(
       "chatMessage",
-      ({ chatId, cipher, senderId, _id, createdAt, picture, messageType }) => {
-        console.log("handling message", messageType);
+      ({ chatId, cipher, senderId, _id, createdAt, picture, messageType, companionId, encVersion }) => {
+        if (companionId in onlineUsers) {
+          const companionSocket = io.sockets.sockets.get(onlineUsers[companionId]);
+          if (companionSocket) companionSocket.join(chatId);
+        }
+
         io.to(chatId).emit("chatMessage", {
           chatId,
           cipher,
@@ -79,26 +76,26 @@ export function initSocket(httpServer) {
           createdAt,
           picture,
           messageType,
+          encVersion: encVersion ?? 1,
+          status: { delievered: 0, read: 0 },
         });
       }
     );
 
     socket.on("deleteMessage", ({ messageId, chatId }) => {
-      io.to(chatId).emit("deleteMessage", {
-        messageId,
-      });
+      io.to(chatId).emit("deleteMessage", { messageId });
     });
 
-    // add to a database soon
     socket.on("call", (callId) => {
-      console.log("rooms: ", rooms);
       if (rooms[callId]) {
         if (!rooms[callId].includes(socket.id)) rooms[callId].push(socket.id);
       } else {
         rooms[callId] = [socket.id];
       }
+
       const otherUser = rooms[callId].find((id) => id !== socket.id);
       userCallRoom = callId;
+
       if (otherUser) {
         socket.emit("otherUser", otherUser);
         socket.to(otherUser).emit("userJoined", socket.id);
@@ -121,22 +118,20 @@ export function initSocket(httpServer) {
       if (userCallRoom && rooms[userCallRoom]) {
         const companionId = rooms[userCallRoom].find((id) => id !== socket.id);
         delete rooms[userCallRoom];
-        console.log("callDisconnect:", userCallRoom, userId);
         await callDisconnect(userCallRoom, userId);
         io.to(companionId).emit("userLeft");
       }
     });
 
-    socket.on("disconnect", async (reason) => {
+    socket.on("disconnect", async () => {
       delete onlineUsers[userId];
+
       if (userCallRoom && rooms[userCallRoom]) {
         const companionId = rooms[userCallRoom].find((id) => id !== socket.id);
         delete rooms[userCallRoom];
-        console.log("callDisconnect:", userCallRoom, userId);
         await callDisconnect(userCallRoom, userId);
         io.to(companionId).emit("userLeft");
       }
-      console.log("disconnected:", rooms);
 
       io.emit("onlineList", { onlineUsersIds: Object.keys(onlineUsers) });
     });
@@ -144,3 +139,5 @@ export function initSocket(httpServer) {
 
   return io;
 }
+
+module.exports = { initSocket };

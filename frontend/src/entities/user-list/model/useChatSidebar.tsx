@@ -6,7 +6,10 @@ import { useUserStore, type userInfo } from "@/entities/user/model/userZustand";
 import type { MessageSchema } from "../../messages/ui/message-bubble/model/types";
 import { port } from "@/util/ui/ProtectedRoutes";
 import { useKeyStore } from "@/util/model/store/zustand";
-import { getSharedKey } from "@/entities/chat/model/encryption";
+import {
+  getSharedKey,
+  isPeerPublicKeyUnavailableError,
+} from "@/entities/chat/model/encryption";
 import { decryptMessage } from "@/entities/chat/model/decryption";
 import { useMessageStore } from "@/entities/messages/model/messageZustand";
 export interface User extends userInfo {
@@ -103,28 +106,56 @@ export const useChatSidebar = () => {
     if (!data) return;
     const handle = async () => {
       const updatedUsers = data.map(async (curUser) => {
-        const {
-          lastMessage = { meta: "", chatId: "", cipher: { iv: "", data: "" } },
-        } = curUser;
+        const lastMessage = curUser.lastMessage;
 
-        if (!lastMessage.chatId || !keyPairs) return curUser;
+        if (!lastMessage?.chatId || !keyPairs) return curUser;
+        if (
+          lastMessage.messageType === "call" ||
+          !lastMessage.cipher?.iv ||
+          !lastMessage.cipher?.data
+        ) {
+          return curUser;
+        }
 
         const { chatId, cipher } = lastMessage;
 
-        const newSharedKey = await getSharedKey(chatId, keyPairs!.privateKey);
+        try {
+          const { key } = await getSharedKey(chatId, keyPairs.privateKey);
+          const newMessage = await decryptMessage(key, {
+            iv: cipher.iv,
+            data: cipher.data,
+          });
 
-        const newMessage = await decryptMessage(newSharedKey, {
-          iv: cipher.iv,
-          data: cipher.data,
-        });
-        curUser.lastMessage.meta = newMessage;
-        return curUser;
+          return {
+            ...curUser,
+            lastMessage: {
+              ...lastMessage,
+              meta: newMessage,
+            },
+          };
+        } catch (e) {
+          if (!isPeerPublicKeyUnavailableError(e)) {
+            console.error(
+              "[crypto] Could not decrypt sidebar preview for chat",
+              chatId,
+              e
+            );
+          }
+
+          return {
+            ...curUser,
+            lastMessage: {
+              ...lastMessage,
+              meta: "Encrypted message",
+            },
+          };
+        }
       });
       const resolvedUsers = await Promise.all(updatedUsers);
       setUsers(resolvedUsers);
     };
     handle();
-  }, [data]);
+  }, [data, keyPairs, setUsers]);
 
   return {
     typed,

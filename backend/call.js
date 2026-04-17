@@ -1,17 +1,5 @@
-import { callRoomModel, messageModel } from "./models.js";
+// Thin compatibility shim — delegates to the call service so existing
+// imports (e.g. socket.js) continue to work without knowing the new layout.
+const { disconnectCall } = require("./services/callService");
 
-export const callDisconnect = async (roomId, userId) => {
-  const call = await callRoomModel.findOne({
-    roomId,
-    membershipIds: userId,
-  });
-
-  const message = await messageModel.findOne({ roomId });
-  console.log("message:", message);
-  console.log("roomId:", roomId);
-  if (message) {
-    message.finishedAt = new Date();
-    await message.save();
-  }
-  if (call) await call.deleteOne();
-};
+module.exports = { callDisconnect: disconnectCall };

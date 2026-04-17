@@ -1,6 +1,10 @@
 import { useRef } from "react";
 import { port } from "@util/ui/ProtectedRoutes";
-import { encryptMessage, getSharedKey } from "../../chat/model/encryption";
+import {
+  encryptMessage,
+  getSharedKey,
+  isPeerPublicKeyUnavailableError,
+} from "../../chat/model/encryption";
 import { useParams } from "react-router";
 import { useKeyStore } from "@util/model/store/zustand";
 import { decryptMessage } from "../../chat/model/decryption";
@@ -18,7 +22,6 @@ import useMessagesQuery from "./useMessagesQuery";
 type sendMessageSchema = {
   typed: string;
   chatId: string;
-  sharedKey?: CryptoKey;
   picture: string | undefined;
   type?: string;
   roomId?: string;
@@ -66,11 +69,40 @@ export const handleUpdateUsersList = (
   return updatedUsers;
 };
 
+const getMessageIdentity = (message: MessageSchema) =>
+  message._id ?? `${message.chatId}:${String(message.seq)}:${message.createdAt}`;
+
+const mergeMessages = (
+  incoming: MessageSchema[],
+  existing: MessageSchema[]
+): MessageSchema[] => {
+  const incomingIds = new Set(incoming.map(getMessageIdentity));
+  return [
+    ...incoming,
+    ...existing.filter((message) => !incomingIds.has(getMessageIdentity(message))),
+  ];
+};
+
+const markMessagesPending = (
+  messagesToMark: MessageSchema[]
+): MessageSchema[] =>
+  messagesToMark.map((message) => {
+    if (
+      message.messageType === "call" ||
+      !message.cipher?.iv ||
+      !message.cipher?.data
+    ) {
+      return { ...message, encryptionStatus: "none" as const };
+    }
+
+    return { ...message, encryptionStatus: "pending" as const };
+  });
+
 export const useMessages = () => {
   const messages = useMessageStore((state) => state.messages);
   const messageLength = useMessageStore((state) => state.messages.length);
   const setMessages = useMessageStore((state) => state.setMessages);
-  const addMessages = useMessageStore((state) => state.addMessages);
+  const updateMessageId = useMessageStore((state) => state.updateMessageId);
 
   const { chatId } = useParams();
 
@@ -81,8 +113,13 @@ export const useMessages = () => {
 
   const keyPairs = useKeyStore((state) => state?.keyPairs);
 
-  const sharedKey = useKeyStore((state) => state.sharedKey);
-  const changeSharedKey = useKeyStore((state) => state.changeSharedKey);
+  // Per-chat shared key: avoids destroying the key for Chat A when opening Chat B.
+  const sharedKey = useKeyStore(
+    (state) => (chatId ? state.sharedKeys.get(chatId) : undefined)
+  );
+  const setSharedKeyForChat = useKeyStore(
+    (state) => state.setSharedKeyForChat
+  );
 
   const addSingleMessage = useMessageStore((state) => state.addSingleMessage);
 
@@ -90,72 +127,119 @@ export const useMessages = () => {
   const { data, isLoading, fetchNextPage, isFetchingNextPage, hasNextPage } =
     useMessagesQuery();
 
+  // Incremented each time handleDecrypting starts. Each async decrypt batch
+  // checks its own generation number before writing to state, so a superseded
+  // batch (e.g. the user switched chats) discards its results without stomping
+  // on newer data.
   const decryptGeneration = useRef(0);
 
   const decryptMessages = async (
     newSharedKey: CryptoKey,
     messagesToDecrypt: MessageSchema[],
     myGen: number
-  ) => {
-    if (decryptGeneration.current !== myGen) return;
-    return await Promise.all(
+  ): Promise<MessageSchema[]> => {
+    if (decryptGeneration.current !== myGen) return [];
+
+    return Promise.all(
       messagesToDecrypt.map(async (message: MessageSchema) => {
+        // Call-type messages store the room ID in the `roomId` field and do not
+        // carry meaningful cipher data.
+        if (
+          message.messageType === "call" ||
+          !message.cipher?.iv ||
+          !message.cipher?.data
+        ) {
+          return { ...message, encryptionStatus: "none" as const };
+        }
+
         try {
-          const newMessage = await decryptMessage(newSharedKey, {
+          const plaintext = await decryptMessage(newSharedKey, {
             iv: message.cipher.iv,
             data: message.cipher.data,
           });
-          return { ...message, meta: newMessage };
+          return {
+            ...message,
+            meta: plaintext,
+            encryptionStatus: "decrypted" as const,
+          };
         } catch (e) {
-          console.log(e);
+          // Do not silently drop: surface a 'failed' status so the UI can
+          // show an "unable to decrypt" indicator instead of a blank bubble.
+          console.error("[crypto] Decryption failed for message", message._id, e);
+          return { ...message, encryptionStatus: "failed" as const };
         }
       })
     );
   };
+
   const handleDecrypting = async () => {
     if (!chatId || !user?._id || !keyPairs || !data?.pages) return;
+
     const myGen = ++decryptGeneration.current;
-    const newSharedKey = await getSharedKey(chatId, keyPairs.privateKey);
-    let decryptedMessages: MessageSchema[] = [];
-    if ((data.pages?.length - 1) * 30 > messageLength) {
-      decryptedMessages =
-        [...data.pages].reverse().flatMap((page) => page.messages) || [];
-    } else {
-      decryptedMessages = data?.pages[data.pages.length - 1]?.messages || [];
+
+    const shouldProcessAllPages =
+      messages.some((message) => message.encryptionStatus === "pending") ||
+      (data.pages.length - 1) * 30 > messageLength;
+
+    const messagesToDecrypt = shouldProcessAllPages
+      ? [...data.pages].reverse().flatMap((page) => page.messages) ?? []
+      : data.pages[data.pages.length - 1]?.messages ?? [];
+
+    if (messagesToDecrypt.length === 0) return;
+
+    // Use the cached shared key if available; derive it only when necessary.
+    // This avoids a network round-trip on every pagination event.
+    let resolvedKey = useKeyStore.getState().sharedKeys.get(chatId);
+    if (!resolvedKey) {
+      try {
+        const { key } = await getSharedKey(chatId, keyPairs.privateKey);
+        setSharedKeyForChat(chatId, key);
+        resolvedKey = key;
+      } catch (e) {
+        if (isPeerPublicKeyUnavailableError(e)) {
+          if (decryptGeneration.current !== myGen) return;
+          setMessages(
+            mergeMessages(
+              markMessagesPending(messagesToDecrypt),
+              useMessageStore.getState().messages
+            )
+          );
+          return;
+        }
+
+        console.error("[crypto] Could not derive shared key for chat", chatId, e);
+        return;
+      }
     }
-    changeSharedKey(newSharedKey);
-    if (decryptedMessages.length > 0 && newSharedKey) {
-      const decrypted = await decryptMessages(
-        newSharedKey,
-        decryptedMessages,
-        myGen
-      );
-      addMessages(
-        (decrypted ?? []).filter(
-          (msg): msg is MessageSchema => msg !== undefined
-        )
-      );
-    }
+
+    const decrypted = await decryptMessages(resolvedKey, messagesToDecrypt, myGen);
+
+    // Re-check generation after the async gap; another chat navigation may have
+    // started a newer run while we were awaiting.
+    if (decryptGeneration.current !== myGen) return;
+
+    setMessages(mergeMessages(decrypted, useMessageStore.getState().messages));
   };
 
   const handleMessage = (newMessage: MessageSchema) => {
     addSingleMessage(newMessage);
   };
 
+  // Builds the wire payload and a local optimistic copy of the message.
+  // The optimistic copy uses a temporary UUID as _id so it can be replaced
+  // with the real server _id once the POST /messages response arrives.
   const handleCreateMessage = async (
     typed: string,
+    currentSharedKey: CryptoKey,
     picture: string | undefined,
     type: string,
     roomId: string
   ) => {
-    const { iv, data } = await encryptMessage(typed, sharedKey!);
+    const { iv, data } = await encryptMessage(typed, currentSharedKey);
 
-    const message = {
+    const wirePayload = {
       chatId: chatId ?? "",
-      cipher: {
-        iv,
-        data,
-      },
+      cipher: { iv, data },
       picture,
       messageType: type
         ? type
@@ -166,20 +250,22 @@ export const useMessages = () => {
         : "txt",
       roomId,
     };
-    const createdAt = new Date();
-    const msg = {
-      ...message,
+
+    // Temporary client-side ID — replaced by updateMessageId after API response.
+    const tempId = crypto.randomUUID();
+
+    const optimisticMsg: MessageSchema = {
+      ...wirePayload,
+      _id: tempId,
       senderId: user?._id ?? "",
-      createdAt,
+      createdAt: new Date(),
       seq: 0,
       meta: typed,
-      status: {
-        delievered: 0,
-        read: 0,
-      },
+      encryptionStatus: "decrypted",
+      status: { delievered: 0, read: 0 },
     };
 
-    return { msg, message };
+    return { optimisticMsg, wirePayload, tempId };
   };
 
   const sendMessage = async ({
@@ -188,38 +274,40 @@ export const useMessages = () => {
     type,
     roomId,
   }: sendMessageSchema) => {
+    // Explicit guard: do not allow sending if the shared key has not been derived.
     if (
       (typed.trim() === "" && picture === undefined && roomId?.trim() === "") ||
       !sharedKey
     )
       return;
+
     const formData = new FormData();
     if (picture) {
       const blob = await fetch(picture).then((r) => r.blob());
-      const newFile = new File([blob], "profile.png", {
-        type: "image/png",
-      });
-
+      const newFile = new File([blob], "profile.png", { type: "image/png" });
       formData.append("image", newFile);
     }
 
-    const { msg, message } = await handleCreateMessage(
+    const { optimisticMsg, wirePayload, tempId } = await handleCreateMessage(
       typed,
+      sharedKey,
       picture,
       type || "",
       roomId || ""
     );
 
-    handleMessage(msg);
+    // Optimistically show the message immediately (with tempId).
+    handleMessage(optimisticMsg);
     const updatedUsers = handleUpdateUsersList(
-      msg,
+      optimisticMsg,
       users,
       companion,
       chatId!,
       user
     );
     setUsers(updatedUsers);
-    formData.append("message", JSON.stringify(message));
+
+    formData.append("message", JSON.stringify(wirePayload));
     if (type === "call") formData.append("type", type);
 
     const response = await fetch(`${port}/messages`, {
@@ -227,13 +315,21 @@ export const useMessages = () => {
       body: formData,
       credentials: "include",
     });
-    if (!response.ok) {
-      return;
+
+    if (!response.ok) return;
+
+    const savedMessage = await response.json();
+
+    // Replace the optimistic tempId with the real server-assigned _id so that
+    // context-menu delete and read-receipt actions target the correct document.
+    if (savedMessage._id) {
+      updateMessageId(tempId, savedMessage._id);
     }
 
-    const newMessage = await response.json();
-
-    socket.emit("chatMessage", { ...newMessage, companionId: companion?._id });
+    socket.emit("chatMessage", {
+      ...savedMessage,
+      companionId: companion?._id,
+    });
   };
 
   const readMessage = async (messageId: string) => {
@@ -242,9 +338,8 @@ export const useMessages = () => {
       credentials: "include",
     });
 
-    if (!response.ok) {
-      return;
-    }
+    if (!response.ok) return;
+
     const updatedMessage = await response.json();
     const updatedMessages = messages.map((msg) =>
       msg._id === messageId
@@ -252,8 +347,8 @@ export const useMessages = () => {
         : msg
     );
 
-    const updatedUsers = users.map((u) => {
-      return u.chatId === updatedMessage.chatId
+    const updatedUsers = users.map((u) =>
+      u.chatId === updatedMessage.chatId
         ? {
             ...u,
             lastMessage: {
@@ -261,11 +356,10 @@ export const useMessages = () => {
               status: { read: 1, delievered: 1 },
             },
           }
-        : u;
-    });
+        : u
+    );
 
     setUsers(updatedUsers);
-
     setMessages(updatedMessages);
   };
 
