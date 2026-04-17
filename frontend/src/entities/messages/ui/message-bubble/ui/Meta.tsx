@@ -1,4 +1,4 @@
-import type { EncryptionStatus } from "../../model/types";
+import type { EncryptionStatus } from "../types";
 
 interface MetaProps {
   handleOpenPhoto: () => void;

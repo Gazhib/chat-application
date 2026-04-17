@@ -1,5 +1,5 @@
 import { useVideoToolbar } from "@/entities/video-chat/ui/Toolbar/model/useVideoToolbar";
-import ToolbarButton from "@/shared/toolbar-button/ui/ToolbarButton";
+import ToolbarButton from "@/shared/toolbar-button/ToolbarButton";
 
 export default function MicrophoneButton({}: {}) {
   const { toggleAudio, isAudio } = useVideoToolbar();

@@ -1,4 +1,4 @@
-import { useUser } from "../../model/useUser";
+import { useUser } from "../model/useUser";
 
 export default function Description({
   userDescription,

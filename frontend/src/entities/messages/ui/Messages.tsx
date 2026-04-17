@@ -1,8 +1,8 @@
-import type { MessageSchema } from "./message-bubble/model/types";
+import type { MessageSchema } from "./message-bubble/types";
 import type { userInfo } from "@/entities/user/model/userZustand";
-import MessageBubble from "./message-bubble/ui/MessageBubble";
+import MessageBubble from "./message-bubble/MessageBubble";
 import LoadingSpinner from "@/shared/spinner/ui/LoadingSpinner";
-import { useChatHeader } from "@/entities/chat/ui/header/model/useChatHeader";
+import { useChatHeader } from "@/entities/chat/ui/header/useChatHeader";
 
 interface Messages {
   isLoading: boolean;

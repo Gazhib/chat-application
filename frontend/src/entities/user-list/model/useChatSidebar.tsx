@@ -3,9 +3,9 @@ import { useNavigate } from "react-router";
 import { useEffect, useState } from "react";
 import { create } from "zustand";
 import { useUserStore, type userInfo } from "@/entities/user/model/userZustand";
-import type { MessageSchema } from "../../messages/ui/message-bubble/model/types";
+import type { MessageSchema } from "../../messages/ui/message-bubble/types";
 import { port } from "@/util/ui/ProtectedRoutes";
-import { useKeyStore } from "@/util/model/store/zustand";
+import { useKeyStore } from "@/util/model/zustand";
 import {
   getSharedKey,
   isPeerPublicKeyUnavailableError,

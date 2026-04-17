@@ -1,5 +1,5 @@
-import ActionButtons from "./components/action-buttons/ActionButtons";
-import CaptionField from "./components/caption-field/CaptionField";
+import ActionButtons from "./ActionButtons";
+import CaptionField from "./CaptionField";
 import { Modal } from "antd";
 
 type InputModalScheme = {

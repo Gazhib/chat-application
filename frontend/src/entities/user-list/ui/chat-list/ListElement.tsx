@@ -1,4 +1,4 @@
-import type { MessageSchema } from "@/entities/messages/ui/message-bubble/model/types";
+import type { MessageSchema } from "@/entities/messages/ui/message-bubble/types";
 import { useUserStore } from "@/entities/user/model/userZustand";
 import { pp } from "@/entities/user/model/useUser";
 

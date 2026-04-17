@@ -1,6 +1,6 @@
 import { useChatInput } from "./input-modal/model/useChatInput";
 import { InputModal } from "./input-modal/ui/InputModal";
-import Toolbar from "./toolbar/ui/Toolbar";
+import Toolbar from "./toolbar/Toolbar";
 
 type Props = {
   typed: string;

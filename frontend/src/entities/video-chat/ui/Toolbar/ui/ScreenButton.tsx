@@ -1,5 +1,5 @@
-import ToolbarButton from "@/shared/toolbar-button/ui/ToolbarButton";
-import { useVideoToolbar } from "../../model/useVideoToolbar";
+import ToolbarButton from "@/shared/toolbar-button/ToolbarButton";
+import { useVideoToolbar } from "../model/useVideoToolbar";
 
 export default function ScreenButton() {
   const { shareScreen, isSharing, stopShareScreen } = useVideoToolbar();

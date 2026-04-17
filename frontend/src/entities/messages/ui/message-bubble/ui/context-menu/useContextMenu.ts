@@ -1,4 +1,4 @@
-import { socket } from "@/util/model/socket/socket";
+import { socket } from "@/util/model/socket";
 import { port } from "@/util/ui/ProtectedRoutes";
 import { useState } from "react";
 import { useParams } from "react-router";

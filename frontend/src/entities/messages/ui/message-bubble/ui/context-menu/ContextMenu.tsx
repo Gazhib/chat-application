@@ -1,5 +1,5 @@
-import { useContextMenu } from "../model/useContextMenu";
-import type { MessageSchema } from "../../../../model/types";
+import { useContextMenu } from "./useContextMenu";
+import type { MessageSchema } from "../../types";
 
 export default function ContextMenu({
   message,

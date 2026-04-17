@@ -5,7 +5,7 @@ import { useUserStore, type userInfo } from "@/entities/user/model/userZustand";
 import ChatInput from "./input/ChatInput";
 import Messages from "@/entities/messages/ui/Messages";
 import ChatHeader from "./header/Chatheader";
-import { useKeyStore } from "@/util/model/store/zustand";
+import { useKeyStore } from "@/util/model/zustand";
 
 export default function Chat() {
   const { chatId } = useParams();

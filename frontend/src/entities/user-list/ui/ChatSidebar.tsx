@@ -1,6 +1,6 @@
 import { useChatSidebar } from "../model/useChatSidebar";
-import ChatList from "./components/chat-list/ChatList";
-import SearchInput from "./components/search-input/SearchInput";
+import ChatList from "./chat-list/ChatList";
+import SearchInput from "./search-input/SearchInput";
 
 export default function ChatSidebar() {
   const { setTyped, typed, searchResults } = useChatSidebar();

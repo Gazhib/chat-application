@@ -1,5 +1,5 @@
-import Description from "./profile-components/Description";
-import UserInfo from "./profile-components/UserInfo";
+import Description from "./Description";
+import UserInfo from "./UserInfo";
 import { useUserStore, type userInfo } from "../model/userZustand";
 import { Modal } from "antd";
 

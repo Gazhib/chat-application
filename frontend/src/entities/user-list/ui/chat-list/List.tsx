@@ -1,5 +1,5 @@
-import type { User } from "../../../../model/useChatSidebar";
-import CLElement from "./ListElement";
+import type { User } from "../../model/useChatSidebar";
+import CLElement from "./components/ListElement";
 
 interface ListScheme {
   onlineUsers: string[];

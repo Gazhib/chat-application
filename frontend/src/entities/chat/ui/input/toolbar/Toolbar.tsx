@@ -1,7 +1,7 @@
-import AttachmentButton from "./components/attachment-button/AttachmentButton";
-import AttachmentInput from "./components/attachment-button/AttachmentInput";
-import SendButton from "./components/send-button/SendButton";
-import TextMessageInput from "./components/text-message-input/TextMessageInput";
+import AttachmentButton from "./attachment-button/AttachmentButton";
+import AttachmentInput from "./attachment-button/AttachmentInput";
+import SendButton from "./send-button/SendButton";
+import TextMessageInput from "./text-message-input/TextMessageInput";
 interface ToolbarScheme {
   fileInputRef: React.RefObject<HTMLInputElement | null>;
   handleFile: (event: React.ChangeEvent<HTMLInputElement>) => void;

@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import type { MessageSchema } from "@/entities/messages/ui/message-bubble/model/types";
+import type { MessageSchema } from "@/entities/messages/ui/message-bubble/types";
 
 interface messageStoreState {
   messages: MessageSchema[];

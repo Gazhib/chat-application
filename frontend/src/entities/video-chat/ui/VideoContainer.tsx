@@ -1,4 +1,4 @@
-import Video from "@/entities/video/ui/Video";
+import Video from "@/entities/video/Video";
 
 export default function VideoContainer({
   userVideo,

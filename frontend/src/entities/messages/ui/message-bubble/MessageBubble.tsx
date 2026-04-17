@@ -1,13 +1,13 @@
 import { useEffect, useRef, useState } from "react";
-import type { MessageSchema } from "../model/types";
-import { PhotoModal } from "./components/PhotoModal/PhotoModal";
+import type { MessageSchema } from "./types";
+import { PhotoModal } from "./ui/PhotoModal";
 import { useUserStore, type userInfo } from "@/entities/user/model/userZustand";
-import Meta from "./components/Meta";
-import ProfilePicture from "./components/ProfilePicture";
+import Meta from "./ui/Meta";
+import ProfilePicture from "./ui/ProfilePicture";
 import { pp } from "@/entities/user/model/useUser";
-import { useContextMenu } from "./components/context-menu/model/useContextMenu";
-import ContextMenu from "./components/context-menu/ui/ContextMenu";
-import CallMessage from "./components/CallMessage";
+import { useContextMenu } from "./ui/context-menu/useContextMenu";
+import ContextMenu from "./ui/context-menu/ContextMenu";
+import CallMessage from "./ui/CallMessage";
 
 import { Popover } from "antd";
 import { ProfileModal } from "@/entities/user/ui/ProfileModal";

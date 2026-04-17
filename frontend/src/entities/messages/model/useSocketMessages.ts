@@ -1,9 +1,9 @@
 import { useCallback, useEffect } from "react";
-import type { MessageSchema } from "../ui/message-bubble/model/types";
+import type { MessageSchema } from "../ui/message-bubble/types";
 import { useMessageStore } from "./messageZustand";
 import { usersStore } from "@/entities/user-list/model/useChatSidebar";
 import useCompanionQuery, { getCompanion } from "./useCompanionQuery";
-import { useKeyStore } from "@/util/model/store/zustand";
+import { useKeyStore } from "@/util/model/zustand";
 import { useUserStore } from "@/entities/user/model/userZustand";
 import { useParams } from "react-router";
 import { unstable_batchedUpdates } from "react-dom";

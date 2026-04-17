@@ -1,7 +1,7 @@
-import MicrophoneButton from "./components/MicrophoneButton";
-import PhoneButton from "./components/PhoneButton";
-import ScreenButton from "./components/ScreenButton";
-import VideoButton from "./components/VideoButton";
+import MicrophoneButton from "./MicrophoneButton";
+import PhoneButton from "./PhoneButton";
+import ScreenButton from "./ScreenButton";
+import VideoButton from "./VideoButton";
 
 export default function VideoToolbar({}: {}) {
   return (

@@ -1,4 +1,4 @@
-import CustomButton from "../CustomButton";
+import CustomButton from "./CustomButton";
 interface ActionButtonsScheme {
   onCloseModal: () => void;
   handleSendMessage: (picture: string | undefined) => void;

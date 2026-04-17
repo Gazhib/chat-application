@@ -6,18 +6,18 @@ import {
   isPeerPublicKeyUnavailableError,
 } from "../../chat/model/encryption";
 import { useParams } from "react-router";
-import { useKeyStore } from "@util/model/store/zustand";
+import { useKeyStore } from "@/util/model/zustand";
 import { decryptMessage } from "../../chat/model/decryption";
-import { socket } from "@util/model/socket/socket";
 import { useMessageStore } from "./messageZustand";
 import { useUserStore, type userInfo } from "@entities/user/model/userZustand";
-import type { MessageSchema } from "@/entities/messages/ui/message-bubble/model/types";
+import type { MessageSchema } from "@/entities/messages/ui/message-bubble/types";
 import {
   usersStore,
   type User,
 } from "@/entities/user-list/model/useChatSidebar";
 import useCompanionQuery from "./useCompanionQuery";
 import useMessagesQuery from "./useMessagesQuery";
+import { socket } from "@/util/model/socket";
 
 type sendMessageSchema = {
   typed: string;
