@@ -18,8 +18,8 @@ export default function ChatInput({
     fileInputRef,
     sendMessage,
     onCloseModal,
-    modalRef,
     previewUrl,
+    isChatModalOpen,
   } = useChatInput({
     handleSendMessage,
   });
@@ -34,8 +34,8 @@ export default function ChatInput({
         fileInputRef={fileInputRef}
       />
       <InputModal
+        isModalOpen={isChatModalOpen}
         onCloseModal={onCloseModal}
-        ref={modalRef}
         caption={typed}
         picture={previewUrl}
         handleCaption={handleTyped}

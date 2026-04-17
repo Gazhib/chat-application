@@ -14,6 +14,7 @@
     "@reduxjs/toolkit": "^2.8.2",
     "@tailwindcss/vite": "^4.1.11",
     "@tanstack/react-query": "^5.81.5",
+    "antd": "^6.3.6",
     "bootstrap-icons": "^1.13.1",
     "bson": "^6.10.4",
     "buffer": "^6.0.3",
@@ -24,6 +25,7 @@
     "react-redux": "^9.2.0",
     "react-router": "^7.6.3",
     "socket.io-client": "^4.8.1",
+    "solar-icon-set": "^2.0.1",
     "tailwindcss": "^4.1.11",
     "zustand": "^5.0.6"
   },

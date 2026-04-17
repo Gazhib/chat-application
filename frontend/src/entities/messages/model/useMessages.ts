@@ -162,11 +162,39 @@ export const useMessages = () => {
             meta: plaintext,
             encryptionStatus: "decrypted" as const,
           };
-        } catch (e) {
-          // Do not silently drop: surface a 'failed' status so the UI can
-          // show an "unable to decrypt" indicator instead of a blank bubble.
-          console.error("[crypto] Decryption failed for message", message._id, e);
-          return { ...message, encryptionStatus: "failed" as const };
+        } catch {
+          try {
+            if (!keyPairs) {
+              throw new Error("Local key pair is unavailable");
+            }
+
+            const { key: refreshedKey } = await getSharedKey(
+              message.chatId,
+              keyPairs.privateKey
+            );
+
+            setSharedKeyForChat(message.chatId, refreshedKey);
+
+            const plaintext = await decryptMessage(refreshedKey, {
+              iv: message.cipher.iv,
+              data: message.cipher.data,
+            });
+
+            return {
+              ...message,
+              meta: plaintext,
+              encryptionStatus: "decrypted" as const,
+            };
+          } catch (retryError) {
+            // Do not silently drop: surface a 'failed' status so the UI can
+            // show an "unable to decrypt" indicator instead of a blank bubble.
+            console.error(
+              "[crypto] Decryption failed for message",
+              message._id,
+              retryError
+            );
+            return { ...message, encryptionStatus: "failed" as const };
+          }
         }
       })
     );
@@ -288,9 +316,27 @@ export const useMessages = () => {
       formData.append("image", newFile);
     }
 
+    let keyForSend = sharedKey;
+
+    if (chatId && keyPairs) {
+      try {
+        const { key: refreshedKey } = await getSharedKey(chatId, keyPairs.privateKey);
+        setSharedKeyForChat(chatId, refreshedKey);
+        keyForSend = refreshedKey;
+      } catch (e) {
+        if (!isPeerPublicKeyUnavailableError(e)) {
+          console.warn(
+            "[crypto] Falling back to cached shared key while sending",
+            chatId,
+            e
+          );
+        }
+      }
+    }
+
     const { optimisticMsg, wirePayload, tempId } = await handleCreateMessage(
       typed,
-      sharedKey,
+      keyForSend,
       picture,
       type || "",
       roomId || ""

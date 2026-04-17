@@ -8,7 +8,7 @@ export default function VideoChat() {
   const { userVideo, companionVideo, isFinished } = useVideoChat();
 
   return (
-    <main className="ml-[50px] bg-[#18191A] min-h-full max-w-screen flex flex-col justify-around">
+    <main className="bg-[#18191A] min-h-full max-w-screen flex flex-col justify-around">
       {isFinished ? (
         <div className="text-white flex justify-center">Call finished</div>
       ) : (

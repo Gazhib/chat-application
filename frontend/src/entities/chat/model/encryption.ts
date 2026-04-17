@@ -5,7 +5,36 @@ import { port } from "@util/ui/ProtectedRoutes";
 // The public key only needs to be uploaded once per browser session (or when it
 // changes). Tracking this at the module level avoids a network round-trip on
 // every call to getKeyPair().
+const KEY_PAIR_DB_NAME = "keyPairDb";
+const LEGACY_KEY_PAIR_STORE = "keyPairs";
+const CURRENT_KEY_PAIR_STORE = "keyPairsV2";
+const CURRENT_KEY_PAIR_ID = "current";
+const KEY_PAIR_DB_VERSION = 2;
+
+type StoredKeyPairRecord = {
+  id: string;
+  public: string;
+  private: string;
+  createdAt: string;
+};
+
+type LegacyStoredKeyPairRecord = {
+  public: string;
+  private: string;
+};
+
+type CurrentUserCrypto = {
+  publicKey: string | null;
+  keyVersion: number;
+};
+
 let publicKeyUploaded = false;
+let getKeyPairPromise:
+  | Promise<{
+      publicKey: CryptoKey;
+      privateKey: CryptoKey;
+    }>
+  | null = null;
 
 export class PeerPublicKeyUnavailableError extends Error {
   chatId: string;
@@ -25,6 +54,172 @@ export function isPeerPublicKeyUnavailableError(
 
 // ─── Key pair generation & IDB persistence ──────────────────────────────────
 
+function openKeyPairDb(): Promise<IDBDatabase> {
+  return new Promise((resolve, reject) => {
+    const request = window.indexedDB.open(KEY_PAIR_DB_NAME, KEY_PAIR_DB_VERSION);
+
+    request.onerror = () => reject(request.error);
+
+    request.onupgradeneeded = (event) => {
+      const target = event.target as IDBRequest<IDBDatabase>;
+      const db = target.result;
+
+      if (!db.objectStoreNames.contains(LEGACY_KEY_PAIR_STORE)) {
+        db.createObjectStore(LEGACY_KEY_PAIR_STORE, { keyPath: "public" });
+      }
+
+      if (!db.objectStoreNames.contains(CURRENT_KEY_PAIR_STORE)) {
+        db.createObjectStore(CURRENT_KEY_PAIR_STORE, { keyPath: "id" });
+      }
+    };
+
+    request.onsuccess = (event) => {
+      const target = event.target as IDBRequest<IDBDatabase>;
+      resolve(target.result);
+    };
+  });
+}
+
+function exportPublicKeyBase64(cryptoPublicKey: CryptoKey): Promise<string> {
+  return crypto.subtle
+    .exportKey("raw", cryptoPublicKey)
+    .then((rawPub) => Buffer.from(rawPub).toString("base64"));
+}
+
+function readCurrentStoredKeyPair(
+  db: IDBDatabase
+): Promise<StoredKeyPairRecord | undefined> {
+  if (!db.objectStoreNames.contains(CURRENT_KEY_PAIR_STORE)) {
+    return Promise.resolve(undefined);
+  }
+
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(CURRENT_KEY_PAIR_STORE, "readonly");
+    const store = tx.objectStore(CURRENT_KEY_PAIR_STORE);
+    const request = store.get(CURRENT_KEY_PAIR_ID);
+
+    request.onerror = () => reject(request.error);
+    request.onsuccess = () =>
+      resolve(request.result as StoredKeyPairRecord | undefined);
+  });
+}
+
+function readLegacyStoredKeyPairs(
+  db: IDBDatabase
+): Promise<LegacyStoredKeyPairRecord[]> {
+  if (!db.objectStoreNames.contains(LEGACY_KEY_PAIR_STORE)) {
+    return Promise.resolve([]);
+  }
+
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(LEGACY_KEY_PAIR_STORE, "readonly");
+    const store = tx.objectStore(LEGACY_KEY_PAIR_STORE);
+    const request = store.getAll();
+
+    request.onerror = () => reject(request.error);
+    request.onsuccess = () =>
+      resolve((request.result as LegacyStoredKeyPairRecord[]) ?? []);
+  });
+}
+
+function persistCurrentStoredKeyPair(
+  db: IDBDatabase,
+  record: { public: string; private: string }
+): Promise<void> {
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(CURRENT_KEY_PAIR_STORE, "readwrite");
+    const store = tx.objectStore(CURRENT_KEY_PAIR_STORE);
+
+    store.put({
+      id: CURRENT_KEY_PAIR_ID,
+      public: record.public,
+      private: record.private,
+      createdAt: new Date().toISOString(),
+    } satisfies StoredKeyPairRecord);
+
+    tx.oncomplete = () => resolve();
+    tx.onerror = () => reject(tx.error);
+  });
+}
+
+async function persistCurrentKeyPair(
+  publicKeyBase64: string,
+  privateKeyBase64: string
+): Promise<void> {
+  const db = await openKeyPairDb();
+
+  try {
+    await persistCurrentStoredKeyPair(db, {
+      public: publicKeyBase64,
+      private: privateKeyBase64,
+    });
+  } finally {
+    db.close();
+  }
+}
+
+async function fetchCurrentUserCrypto(): Promise<CurrentUserCrypto | null> {
+  try {
+    const response = await fetch(`${port}/me`, {
+      method: "GET",
+      credentials: "include",
+    });
+
+    if (!response.ok) return null;
+
+    const responseData = await response.json();
+    return {
+      publicKey:
+        typeof responseData.publicKey === "string"
+          ? responseData.publicKey
+          : null,
+      keyVersion: Number(responseData.keyVersion ?? 0),
+    };
+  } catch {
+    return null;
+  }
+}
+
+async function selectStoredKeyPairRecord(
+  currentUserCrypto: CurrentUserCrypto | null
+): Promise<{ public: string; private: string } | null> {
+  const db = await openKeyPairDb();
+
+  try {
+    const current = await readCurrentStoredKeyPair(db);
+    const legacy = await readLegacyStoredKeyPairs(db);
+    const serverPublicKey = currentUserCrypto?.publicKey ?? null;
+
+    if (serverPublicKey && current?.public === serverPublicKey) {
+      return { public: current.public, private: current.private };
+    }
+
+    if (serverPublicKey) {
+      const matchingLegacy = legacy.find(
+        (record) => record.public === serverPublicKey
+      );
+
+      if (matchingLegacy) {
+        await persistCurrentStoredKeyPair(db, matchingLegacy);
+        return matchingLegacy;
+      }
+    }
+
+    if (current) {
+      return { public: current.public, private: current.private };
+    }
+
+    if (legacy.length === 1) {
+      await persistCurrentStoredKeyPair(db, legacy[0]);
+      return legacy[0];
+    }
+
+    return null;
+  } finally {
+    db.close();
+  }
+}
+
 export async function generateKeyPair(): Promise<CryptoKeyPair> {
   const keyPair = await crypto.subtle.generateKey(
     { name: "ECDH", namedCurve: "P-256" },
@@ -32,41 +227,12 @@ export async function generateKeyPair(): Promise<CryptoKeyPair> {
     ["deriveKey"]
   );
 
-  const rawPub = await crypto.subtle.exportKey("raw", keyPair.publicKey);
-  const publicKeyBase64 = Buffer.from(rawPub).toString("base64");
+  const publicKeyBase64 = await exportPublicKeyBase64(keyPair.publicKey);
 
   const rawPriv = await crypto.subtle.exportKey("pkcs8", keyPair.privateKey);
   const privateKeyBase64 = Buffer.from(rawPriv).toString("base64");
 
-  // FIXED: the original Promise executor took no arguments, so resolve() was
-  // never called and the await hung forever on first-ever use.
-  await new Promise<void>((resolve, reject) => {
-    const request = window.indexedDB.open("keyPairDb", 1);
-    let db: IDBDatabase;
-
-    request.onerror = () => reject(request.error);
-
-    request.onupgradeneeded = (event) => {
-      const target = event.target as IDBRequest;
-      db = target.result as IDBDatabase;
-      if (!db.objectStoreNames.contains("keyPairs")) {
-        db.createObjectStore("keyPairs", { keyPath: "public" });
-      }
-    };
-
-    request.onsuccess = (event) => {
-      const target = event.target as IDBRequest;
-      db = target.result as IDBDatabase;
-      const tx = db.transaction("keyPairs", "readwrite");
-      const store = tx.objectStore("keyPairs");
-      store.put({ public: publicKeyBase64, private: privateKeyBase64 });
-      tx.oncomplete = () => {
-        db.close();
-        resolve();
-      };
-      tx.onerror = () => reject(tx.error);
-    };
-  });
+  await persistCurrentKeyPair(publicKeyBase64, privateKeyBase64);
 
   return keyPair;
 }
@@ -125,53 +291,38 @@ export async function getKeyPair(): Promise<{
   publicKey: CryptoKey;
   privateKey: CryptoKey;
 }> {
-  return new Promise((resolve, reject) => {
-    const request = window.indexedDB.open("keyPairDb", 1);
-    let db: IDBDatabase;
+  if (getKeyPairPromise) {
+    return getKeyPairPromise;
+  }
 
-    request.onerror = () => reject(request.error);
+  getKeyPairPromise = (async () => {
+    const currentUserCrypto = await fetchCurrentUserCrypto();
+    const storedPair = await selectStoredKeyPairRecord(currentUserCrypto);
 
-    request.onupgradeneeded = (event) => {
-      const target = event.target as IDBRequest;
-      db = target.result as IDBDatabase;
-      if (!db.objectStoreNames.contains("keyPairs")) {
-        db.createObjectStore("keyPairs", { keyPath: "public" });
-      }
-    };
+    if (storedPair) {
+      const pair = await importFromBase64(storedPair.public, storedPair.private);
 
-    request.onsuccess = (event) => {
-      const target = event.target as IDBRequest;
-      db = target.result;
-      const transaction = db.transaction("keyPairs", "readonly");
-      const store = transaction.objectStore("keyPairs");
-      const getRequest = store.getAll();
+      // Keep the v2 store aligned so we never fall back to an arbitrary legacy
+      // record again on the next session.
+      await persistCurrentKeyPair(storedPair.public, storedPair.private);
+      await uploadPublicKey(pair.publicKey);
+      return pair;
+    }
 
-      getRequest.onerror = () => reject(getRequest.error);
+    if (currentUserCrypto?.publicKey) {
+      console.warn(
+        "[crypto] No local private key matched the server public key; generating a new key pair"
+      );
+    }
 
-      getRequest.onsuccess = async () => {
-        try {
-          const result = getRequest.result as Array<{
-            public: string;
-            private: string;
-          }>;
-
-          if (result.length === 0) {
-            // First ever use: generate, persist, then upload.
-            const newKeyPair = await generateKeyPair();
-            await uploadPublicKey(newKeyPair.publicKey);
-            resolve(newKeyPair);
-          } else {
-            const { public: pub, private: priv } = result[0];
-            const pair = await importFromBase64(pub, priv);
-            await uploadPublicKey(pair.publicKey);
-            resolve(pair);
-          }
-        } catch (e) {
-          reject(e);
-        }
-      };
-    };
+    const newKeyPair = await generateKeyPair();
+    await uploadPublicKey(newKeyPair.publicKey);
+    return newKeyPair;
+  })().finally(() => {
+    getKeyPairPromise = null;
   });
+
+  return getKeyPairPromise;
 }
 
 // ─── Shared key derivation ───────────────────────────────────────────────────

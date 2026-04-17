@@ -6,7 +6,7 @@ export default function ChatSidebar() {
   const { setTyped, typed, searchResults } = useChatSidebar();
 
   return (
-    <aside className="w-[240px] h-full bg-[#242526] border-r-[1px] border-[#333333]">
+    <aside className="h-full w-[240px] shrink-0 border-r-[1px] border-[#333333] bg-[#242526]">
       <header className="h-[60px] border-b-[1px] border-[#333333] w-full flex justify-center items-center">
         <SearchInput setTyped={setTyped} />
       </header>

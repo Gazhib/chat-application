@@ -1,17 +1,19 @@
-import { Modal, type modalRefScheme } from "@/shared/modal/ui/Modal";
-import { forwardRef } from "react";
-
+import { Modal } from "antd";
 
 interface PhotoModalScheme {
   picture: string | undefined;
+  isModalOpen: boolean;
+  handleCancel: () => void;
 }
 
-export const PhotoModal = forwardRef<modalRefScheme, PhotoModalScheme>(
-  ({ picture }, ref) => {
-    return (
-      <Modal ref={ref}>
-        <img src={picture} className="max-h-[90vh]" />
-      </Modal>
-    );
-  }
-);
+export const PhotoModal = ({
+  picture,
+  isModalOpen,
+  handleCancel,
+}: PhotoModalScheme) => {
+  return (
+    <Modal open={isModalOpen} onCancel={handleCancel} footer={null} centered>
+      <img src={picture} className="max-h-[90vh]" />
+    </Modal>
+  );
+};

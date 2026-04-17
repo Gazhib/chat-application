@@ -22,7 +22,7 @@ export default function ChatsPage() {
   }, [user?._id]);
 
   return (
-    <main className="ml-[50px] h-screen bg-[#18191A] w-[calc(100%-50px)] flex flex-row">
+    <main className="flex h-screen min-w-0 flex-row bg-[#18191A]">
       <ChatSidebar />
       <Outlet />
     </main>

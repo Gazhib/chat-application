@@ -8,6 +8,10 @@ import { useUserStore } from "@/entities/user/model/userZustand";
 import { useParams } from "react-router";
 import { unstable_batchedUpdates } from "react-dom";
 import { decryptMessage } from "@/entities/chat/model/decryption";
+import {
+  getSharedKey,
+  isPeerPublicKeyUnavailableError,
+} from "@/entities/chat/model/encryption";
 import { socket } from "@/util/model/socket/socket";
 import { handleUpdateUsersList } from "./useMessages";
 
@@ -26,6 +30,8 @@ export const useSocketMessages = () => {
   const currentChatSharedKey = useKeyStore(
     (state) => (chatId ? state.sharedKeys.get(chatId) : undefined)
   );
+  const keyPairs = useKeyStore((state) => state.keyPairs);
+  const setSharedKeyForChat = useKeyStore((state) => state.setSharedKeyForChat);
 
   const user = useUserStore((state) => state.user);
   const addSingleMessage = useMessageStore((state) => state.addSingleMessage);
@@ -91,18 +97,46 @@ export const useSocketMessages = () => {
             iv: msg.cipher.iv,
             data: msg.cipher.data,
           });
+
           decryptedMsg = {
             ...msg,
             meta: plaintext,
             encryptionStatus: "decrypted",
           };
-        } catch (e) {
-          console.error(
-            "[crypto] Failed to decrypt real-time message",
-            msg._id,
-            e
-          );
-          decryptedMsg = { ...msg, encryptionStatus: "failed" };
+        } catch {
+          try {
+            if (!keyPairs) {
+              throw new Error("Local key pair is unavailable");
+            }
+
+            const { key: refreshedKey } = await getSharedKey(
+              msg.chatId,
+              keyPairs.privateKey
+            );
+
+            setSharedKeyForChat(msg.chatId, refreshedKey);
+
+            const plaintext = await decryptMessage(refreshedKey, {
+              iv: msg.cipher.iv,
+              data: msg.cipher.data,
+            });
+
+            decryptedMsg = {
+              ...msg,
+              meta: plaintext,
+              encryptionStatus: "decrypted",
+            };
+          } catch (retryError) {
+            if (!isPeerPublicKeyUnavailableError(retryError)) {
+              console.error(
+                "[crypto] Failed to decrypt real-time message",
+                msg._id,
+                retryError
+              );
+            }
+
+            decryptedMsg = { ...msg, encryptionStatus: "failed" };
+          }
         }
       }
 
@@ -119,7 +153,7 @@ export const useSocketMessages = () => {
         if (chatId === msg.chatId) handleMessage(decryptedMsg);
       });
     },
-    [chatId, users, currentChatSharedKey, user?._id]
+    [chatId, companion, currentChatSharedKey, keyPairs, setSharedKeyForChat, user, users]
   );
 
   useEffect(() => {

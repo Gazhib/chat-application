@@ -11,8 +11,6 @@ export const useContextMenu = ({ messageId }: contextMenu) => {
   const [isContextMenu, setIsContextMenu] = useState(false);
   const { chatId } = useParams();
 
-  const [editedMessage] = useState();
-
   const handleDelete = async () => {
     socket.emit("deleteMessage", { messageId, chatId });
 
@@ -25,33 +23,20 @@ export const useContextMenu = ({ messageId }: contextMenu) => {
     });
   };
 
-  const handleEdit = async () => {
-    socket.emit("editMessage", { messageId, chatId, editedMessage });
-
-    await fetch(`${port}/edit-message`, {
-      method: "POST",
-      credentials: "include",
-      body: JSON.stringify({ messageId, editedMessage }),
-      headers: {
-        "Content-Type": "application/json",
-      },
-    });
-  };
-
   const options = [
     {
       label: "Delete message",
       onClick: () => handleDelete(),
     },
-    {
-      label: "Edit message",
-      onClick: () => handleEdit(),
-    },
+    // {
+    //   label: "Edit message",
+    //   onClick: () => handleEdit(),
+    // },
   ];
 
-  const handleClick = () => {
+  const handleClickContextMenu = () => {
     setIsContextMenu((prev) => !prev);
   };
 
-  return { isContextMenu, handleClick, options };
+  return { isContextMenu, handleClickContextMenu, options };
 };

@@ -1,15 +1,15 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { MessageSchema } from "../model/types";
 import { PhotoModal } from "./components/PhotoModal/PhotoModal";
 import { useUserStore, type userInfo } from "@/entities/user/model/userZustand";
-import { useSidebar } from "@/widget/extended-sidebar/model/useSidebar";
-import type { modalRefScheme } from "@/shared/modal/ui/Modal";
 import Meta from "./components/Meta";
 import ProfilePicture from "./components/ProfilePicture";
 import { pp } from "@/entities/user/model/useUser";
 import { useContextMenu } from "./components/context-menu/model/useContextMenu";
 import ContextMenu from "./components/context-menu/ui/ContextMenu";
 import CallMessage from "./components/CallMessage";
+
+import { Popover } from "antd";
 type Props = {
   message: MessageSchema;
   place: string;
@@ -30,22 +30,22 @@ export default function MessageBubble({
 }: Props) {
   const bubbleRef = useRef<HTMLDivElement>(null);
 
-  const { isContextMenu, handleClick } = useContextMenu({ messageId });
+  const { isContextMenu, handleClickContextMenu } = useContextMenu({
+    messageId,
+  });
+
+  const [isPhotoModalOpen, setIsPhotoModalOpen] = useState(false);
   const time = new Date(message.createdAt).toLocaleTimeString().slice(0, 5);
   const user = useUserStore((state) => state.user);
   const isMe = place === "right";
 
-  const { modalRef } = useSidebar();
-
   const handleOpenModal = () => {
     setCurrentUserModal(isMe ? "me" : "companion");
-    modalRef.current?.openModal();
+    // modalRef.current?.openModal();
   };
 
-  const photoModalRef = useRef<modalRefScheme>(null);
-
   const handleOpenPhoto = () => {
-    photoModalRef.current?.openModal();
+    setIsPhotoModalOpen(true);
   };
 
   useEffect(() => {
@@ -72,10 +72,8 @@ export default function MessageBubble({
     };
   }, []);
 
-
   return (
     <div
-      ref={bubbleRef}
       className={`max-w-[65%] flex ${
         isMe ? "flex-row-reverse self-end" : "flex-row self-start"
       } gap-[10px] relative`}
@@ -86,47 +84,54 @@ export default function MessageBubble({
           isMe ? user?.profilePicture || pp : companion?.profilePicture || pp
         }
       />
-
-      <section
-        onContextMenu={(e) => {
-          e.preventDefault();
-          if (isMe) handleClick();
+      <Popover
+        content={<ContextMenu message={message} />}
+        placement="leftTop"
+        onOpenChange={() => {
+          if (isMe) handleClickContextMenu();
         }}
-        className={`px-[15px] py-[10px] rounded-t-[16px] text-[#E4E6EB] relative w-fit overflow-hidden items-end flex ${
-          isMe
-            ? "bg-[#3A3B3C] rounded-bl-[16px]"
-            : "bg-[#2F3136] rounded-br-[16px] flex-col"
-        }`}
+        open={isContextMenu}
+        trigger={"click"}
+        overlayInnerStyle={{ backgroundColor: "transparent", padding: 0 }}
       >
-        {!isMe && (
-          <div
-            onClick={handleOpenModal}
-            className="text-blue-600 text-[12px] cursor-pointer self-start"
-          >
-            {companion.login}
-          </div>
-        )}
-        {message.messageType === "call" ? (
-          <CallMessage
-            handleCall={handleCall}
-            time={time}
-            callId={message.meta}
-            finishedAt={message.finishedAt}
-          />
-        ) : (
-          <Meta
-            time={time}
-            picture={message.picture}
-            meta={message.meta}
-            encryptionStatus={message.encryptionStatus}
-            handleOpenPhoto={handleOpenPhoto}
-          />
-        )}
-      </section>
-      {isContextMenu && (
-        <ContextMenu handleClickAway={handleClick} message={message} />
-      )}
-      <PhotoModal picture={message.picture} ref={photoModalRef} />
+        <section
+          className={`px-[15px] py-[10px] rounded-t-[16px] text-[#E4E6EB] relative w-fit overflow-hidden items-end flex ${
+            isMe
+              ? "bg-[#3A3B3C] rounded-bl-[16px]"
+              : "bg-[#2F3136] rounded-br-[16px] flex-col"
+          }`}
+        >
+          {!isMe && (
+            <div
+              onClick={handleOpenModal}
+              className="text-blue-600 text-[12px] cursor-pointer self-start"
+            >
+              {companion.login}
+            </div>
+          )}
+          {message.messageType === "call" ? (
+            <CallMessage
+              handleCall={handleCall}
+              time={time}
+              callId={message.meta}
+              finishedAt={message.finishedAt}
+            />
+          ) : (
+            <Meta
+              time={time}
+              picture={message.picture}
+              meta={message.meta}
+              encryptionStatus={message.encryptionStatus}
+              handleOpenPhoto={handleOpenPhoto}
+            />
+          )}
+        </section>
+      </Popover>
+      <PhotoModal
+        picture={message.picture}
+        isModalOpen={isPhotoModalOpen}
+        handleCancel={() => setIsPhotoModalOpen(false)}
+      />
     </div>
   );
 }
