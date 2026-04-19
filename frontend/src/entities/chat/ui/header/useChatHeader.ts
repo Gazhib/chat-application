@@ -2,7 +2,7 @@ import { getCompanion } from "@/entities/messages/model/useCompanionQuery";
 import { useMessages } from "@/entities/messages/model/useMessages";
 import { useUserStore } from "@/entities/user/model/userZustand";
 import { socket } from "@/util/model/socket";
-import { port } from "@/util/ui/ProtectedRoutes";
+import { apiUrl } from "@/util/model/api";
 import { useParams } from "react-router";
 
 export const useChatHeader = () => {
@@ -14,7 +14,7 @@ export const useChatHeader = () => {
 
   const { sendMessage } = useMessages();
   const handleCall = async () => {
-    const response = await fetch(`${port}/calls`, {
+    const response = await fetch(`${apiUrl}/calls`, {
       method: "POST",
       body: JSON.stringify({ companionId }),
       headers: {
@@ -46,3 +46,4 @@ export const useChatHeader = () => {
 
   return { handleCall };
 };
+

@@ -1,5 +1,5 @@
 import { socket } from "@/util/model/socket";
-import { port } from "@/util/ui/ProtectedRoutes";
+import { apiUrl } from "@/util/model/api";
 import { useState } from "react";
 import { useParams } from "react-router";
 
@@ -14,7 +14,7 @@ export const useContextMenu = ({ messageId }: contextMenu) => {
   const handleDelete = async () => {
     socket.emit("deleteMessage", { messageId, chatId });
 
-    await fetch(`${port}/messages/${messageId}`, {
+    await fetch(`${apiUrl}/messages/${messageId}`, {
       method: "DELETE",
       credentials: "include",
       headers: {
@@ -40,3 +40,4 @@ export const useContextMenu = ({ messageId }: contextMenu) => {
 
   return { isContextMenu, handleClickContextMenu, options };
 };
+

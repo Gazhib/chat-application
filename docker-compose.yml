@@ -1,6 +1,7 @@
 services:
   postgres:
     image: postgres:16-alpine
+    command: ["postgres", "-p", "5433"]
     environment:
       POSTGRES_DB: chatenko
       POSTGRES_USER: postgres
@@ -11,7 +12,7 @@ services:
       - postgres_data:/var/lib/postgresql/data
       - ./backend/schema.sql:/docker-entrypoint-initdb.d/01-schema.sql:ro
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres -d chatenko"]
+      test: ["CMD-SHELL", "pg_isready -U postgres -d chatenko -p 5433"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -54,8 +55,8 @@ services:
       context: .
       dockerfile: frontend/Dockerfile
       args:
-        DF_PORT: ${DF_PORT}
-        AUTH_PORT: ${AUTH_PORT}
+        VITE_API_URL: ${VITE_API_URL}
+        VITE_AUTH_URL: ${VITE_AUTH_URL}
     depends_on:
       - backend
       - auth

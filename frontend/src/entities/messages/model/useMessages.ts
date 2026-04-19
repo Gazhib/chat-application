@@ -6,7 +6,7 @@ import {
 import { socket } from "@/util/model/socket";
 import { useKeyStore } from "@/util/model/zustand";
 import { useUserStore, type userInfo } from "@entities/user/model/userZustand";
-import { port } from "@util/ui/ProtectedRoutes";
+import { apiUrl } from "@util/model/api";
 import { useRef } from "react";
 import { useParams } from "react-router";
 import { decryptMessage } from "../../chat/model/decryption";
@@ -356,7 +356,7 @@ export const useMessages = () => {
     formData.append("message", JSON.stringify(wirePayload));
     if (type === "call") formData.append("type", type);
 
-    const response = await fetch(`${port}/messages`, {
+    const response = await fetch(`${apiUrl}/messages`, {
       method: "POST",
       body: formData,
       credentials: "include",
@@ -379,7 +379,7 @@ export const useMessages = () => {
   };
 
   const readMessage = async (messageId: string) => {
-    const response = await fetch(`${port}/messages/${messageId}`, {
+    const response = await fetch(`${apiUrl}/messages/${messageId}`, {
       method: "PATCH",
       credentials: "include",
     });
@@ -424,3 +424,4 @@ export const useMessages = () => {
     readMessage,
   };
 };
+

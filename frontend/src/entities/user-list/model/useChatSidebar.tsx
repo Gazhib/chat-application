@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { create } from "zustand";
 import { useUserStore, type userInfo } from "@/entities/user/model/userZustand";
 import type { MessageSchema } from "../../messages/ui/message-bubble/types";
-import { port } from "@/util/ui/ProtectedRoutes";
+import { apiUrl } from "@/util/model/api";
 import { useKeyStore } from "@/util/model/zustand";
 import {
   getSharedKey,
@@ -43,7 +43,7 @@ export const useChatSidebar = () => {
   const { data, isLoading } = useQuery({
     queryKey: ["chats", user?._id],
     queryFn: async (): Promise<User[]> => {
-      const response = await fetch(`${port}/users`, {
+      const response = await fetch(`${apiUrl}/users`, {
         method: "GET",
         credentials: "include",
       });
@@ -64,7 +64,7 @@ export const useChatSidebar = () => {
     setTyped("");
     let finalChatId = chatId;
     if (!chatId) {
-      const response = await fetch(`${port}/chats`, {
+      const response = await fetch(`${apiUrl}/chats`, {
         method: "POST",
         credentials: "include",
         headers: { "Content-Type": "application/json" },
@@ -81,7 +81,7 @@ export const useChatSidebar = () => {
   const { data: searchResults, isLoading: isSearchResultsLoading } = useQuery({
     queryKey: ["typed", typed],
     queryFn: async () => {
-      const response = await fetch(`${port}/users/${typed}`, {
+      const response = await fetch(`${apiUrl}/users/${typed}`, {
         method: "POST",
         credentials: "include",
         headers: {
@@ -168,3 +168,4 @@ export const useChatSidebar = () => {
     users,
   };
 };
+

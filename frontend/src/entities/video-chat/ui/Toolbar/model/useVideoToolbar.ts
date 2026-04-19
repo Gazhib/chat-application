@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useCallStore } from "../../../model/callZustand";
 import { useNavigate, useParams } from "react-router";
-import { port } from "@/util/ui/ProtectedRoutes";
+import { apiUrl } from "@/util/model/api";
 import { useMessageStore } from "@/entities/messages/model/messageZustand";
 import { socket } from "@/util/model/socket";
 
@@ -28,7 +28,7 @@ export const useVideoToolbar = () => {
 
   useEffect(() => {
     const handler = async () => {
-      const response = await fetch(`${port}/calls/${callId}`, {
+      const response = await fetch(`${apiUrl}/calls/${callId}`, {
         credentials: "include",
       });
       if (!response.ok) navigate("/chats");
@@ -120,3 +120,4 @@ export const useVideoToolbar = () => {
     hangUp,
   };
 };
+

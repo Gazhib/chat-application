@@ -1,6 +1,6 @@
 import { useInfiniteQuery, type InfiniteData } from "@tanstack/react-query";
 import type { MessageSchema } from "../ui/message-bubble/types";
-import { port } from "@/util/ui/ProtectedRoutes";
+import { apiUrl } from "@/util/model/api";
 import { useNavigate, useParams } from "react-router";
 
 type chatData = {
@@ -28,7 +28,7 @@ export default function useMessagesQuery() {
       queryKey: [chatId!, "messages"],
       queryFn: async ({ pageParam }): Promise<chatData> => {
         const chatResponse = await fetch(
-          `${port}/chats/${chatId}/messages?limit=30&beforeId=${
+          `${apiUrl}/chats/${chatId}/messages?limit=30&beforeId=${
             pageParam.nextCursor || ""
           }`,
           {
@@ -58,3 +58,4 @@ export default function useMessagesQuery() {
 
   return { data, isLoading, fetchNextPage, isFetchingNextPage, hasNextPage };
 }
+

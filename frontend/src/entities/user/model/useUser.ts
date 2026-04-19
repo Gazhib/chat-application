@@ -1,7 +1,7 @@
 import { useNavigate } from "react-router";
 import { useUserStore } from "./userZustand";
 import { useState } from "react";
-import { authPort, port } from "@/util/ui/ProtectedRoutes";
+import { apiUrl, authUrl } from "@/util/model/api";
 
 export const pp =
   "https://cdn.pixabay.com/photo/2015/10/05/22/37/blank-profile-picture-973460_960_720.png";
@@ -12,8 +12,7 @@ export const useUser = () => {
   const navigate = useNavigate();
   const checkUser = async () => {
     try {
-      console.log(port)
-      const response = await fetch(`${port}/me`, {
+      const response = await fetch(`${apiUrl}/me`, {
         method: "GET",
         credentials: "include",
       });
@@ -49,7 +48,7 @@ export const useUser = () => {
   };
 
   const refresh = async () => {
-    const refreshResponse = await fetch(`${authPort}/api/refresh`, {
+    const refreshResponse = await fetch(`${authUrl}/api/refresh`, {
       method: "GET",
       credentials: "include",
     });
@@ -78,7 +77,7 @@ export const useUser = () => {
   const [typed, setTyped] = useState("");
 
   const handleChangeDescription = async () => {
-    const response = await fetch(`${port}/user-description`, {
+    const response = await fetch(`${apiUrl}/user-description`, {
       method: "PATCH",
       headers: {
         "Content-Type": "application/json",
@@ -110,3 +109,4 @@ export const useUser = () => {
     user,
   };
 };
+

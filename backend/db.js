@@ -8,7 +8,7 @@ const pool = new Pool(
     ? { connectionString }
     : {
         host: process.env.PGHOST || "localhost",
-        port: Number(process.env.PGPORT || 5432),
+        port: Number(process.env.PGPORT || 5433),
         user: process.env.PGUSER || "postgres",
         password: process.env.PGPASSWORD || "decentra_password123",
         database: process.env.PGDATABASE || "chatenko",
