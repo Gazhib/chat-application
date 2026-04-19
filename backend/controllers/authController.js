@@ -4,7 +4,7 @@ const authService = require("../services/authService");
 const cookieOpts = {
   httpOnly: true,
   secure: true,
-  sameSite: "lax",
+  sameSite: "none",
   path: "/",
   maxAge: 3_600_000,
 };
