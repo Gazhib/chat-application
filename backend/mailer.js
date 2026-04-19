@@ -1,27 +1,35 @@
 require("./loadEnv");
 
-const RESEND_ENDPOINT = "https://api.resend.com/emails";
+const BREVO_ENDPOINT = "https://api.brevo.com/v3/smtp/email";
 
 const sendMail = async ({ to, subject, text, html }) => {
-  const apiKey = process.env.RESEND_API_KEY;
-  const from = process.env.MAIL_FROM;
+  const apiKey = process.env.BREVO_API_KEY;
+  const fromEmail = process.env.MAIL_FROM;
+  const fromName = process.env.MAIL_FROM_NAME || "Chatenko";
 
-  if (!apiKey || !from) {
-    throw new Error("RESEND_API_KEY and MAIL_FROM must be set");
+  if (!apiKey || !fromEmail) {
+    throw new Error("BREVO_API_KEY and MAIL_FROM must be set");
   }
 
-  const response = await fetch(RESEND_ENDPOINT, {
+  const response = await fetch(BREVO_ENDPOINT, {
     method: "POST",
     headers: {
-      Authorization: `Bearer ${apiKey}`,
+      "api-key": apiKey,
       "Content-Type": "application/json",
+      accept: "application/json",
     },
-    body: JSON.stringify({ from, to, subject, text, html }),
+    body: JSON.stringify({
+      sender: { name: fromName, email: fromEmail },
+      to: [{ email: to }],
+      subject,
+      textContent: text,
+      htmlContent: html,
+    }),
   });
 
   if (!response.ok) {
     const body = await response.text();
-    throw new Error(`Resend send failed (${response.status}): ${body}`);
+    throw new Error(`Brevo send failed (${response.status}): ${body}`);
   }
 
   return response.json();
