@@ -2,13 +2,8 @@ import { useEffect, useState } from "react";
 import { socket } from "./socket";
 import { useParams } from "react-router";
 import { useUserStore } from "@/entities/user/model/userZustand";
-import type { MessageSchema } from "@/entities/messages/ui/message-bubble/types";
 
-interface hookScheme {
-  id: string;
-  handleMessage?: (newMessage: MessageSchema) => void;
-}
-export const usePersonalSocket = ({ id }: hookScheme) => {
+export const usePersonalSocket = () => {
   const [onlineUsers, setOnlineUsers] = useState<string[]>([]);
   const { chatId } = useParams();
   const companionId = useUserStore((state) => state.companionId);
