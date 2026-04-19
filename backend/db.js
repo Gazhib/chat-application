@@ -1,5 +1,5 @@
 const { Pool } = require("pg");
-require("dotenv").config({ path: "../.env" });
+require("./loadEnv");
 
 const connectionString = process.env.PG_CONNECTION;
 

@@ -3,7 +3,7 @@ const {
   PutObjectCommand,
   GetObjectCommand,
 } = require("@aws-sdk/client-s3");
-require("dotenv").config({ path: "../.env" });
+require("./loadEnv");
 const { getSignedUrl } = require("@aws-sdk/s3-request-presigner");
 
 const BUCKET_NAME = process.env.BUCKET_NAME;

@@ -1,7 +1,7 @@
 const express = require("express");
 const cors = require("cors");
 const cookieParser = require("cookie-parser");
-require("dotenv").config({ path: "../.env" });
+require("./loadEnv");
 
 const authRoutes = require("./routes/authRoutes");
 const { errorHandler } = require("./middleware/error");

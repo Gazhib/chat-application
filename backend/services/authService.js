@@ -5,7 +5,7 @@ const { userRepository } = require("../repositories");
 const { transporter } = require("../mailer");
 const { getPictureUrl } = require("./storageService");
 const { trimmerCheck } = require("../utils/validation");
-require("dotenv").config({ path: "../.env" });
+require("../loadEnv");
 
 const accessSecretKey = process.env.ACCESS_SECRET;
 const refreshSecretKey = process.env.REFRESH_SECRET;

@@ -3,7 +3,7 @@ const cookie = require("cookie");
 const jwt = require("jsonwebtoken");
 const { callDisconnect } = require("./call");
 const { createCorsOriginValidator } = require("./utils/origins");
-require("dotenv").config({ path: "../.env" });
+require("./loadEnv");
 
 const accessSecretKey = process.env.ACCESS_SECRET;
 

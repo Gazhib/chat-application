@@ -54,8 +54,8 @@ services:
       context: .
       dockerfile: frontend/Dockerfile
       args:
-        VITE_APP_DF_PORT: ${DF_PORT}
-        VITE_APP_AUTH_PORT: ${AUTH_PORT}
+        DF_PORT: ${DF_PORT}
+        AUTH_PORT: ${AUTH_PORT}
     depends_on:
       - backend
       - auth

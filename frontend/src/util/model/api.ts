@@ -29,5 +29,5 @@ const resolveServiceUrl = (value: string | undefined) => {
   return normalizedValue;
 };
 
-export const port = resolveServiceUrl(import.meta.env.VITE_APP_DF_PORT);
-export const authPort = resolveServiceUrl(import.meta.env.VITE_APP_AUTH_PORT);
+export const port = resolveServiceUrl(import.meta.env.DF_PORT);
+export const authPort = resolveServiceUrl(import.meta.env.AUTH_PORT);
