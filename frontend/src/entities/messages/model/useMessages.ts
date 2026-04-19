@@ -1,23 +1,23 @@
-import { useRef } from "react";
-import { port } from "@util/ui/ProtectedRoutes";
-import {
-  encryptMessage,
-  getSharedKey,
-  isPeerPublicKeyUnavailableError,
-} from "../../chat/model/encryption";
-import { useParams } from "react-router";
-import { useKeyStore } from "@/util/model/zustand";
-import { decryptMessage } from "../../chat/model/decryption";
-import { useMessageStore } from "./messageZustand";
-import { useUserStore, type userInfo } from "@entities/user/model/userZustand";
 import type { MessageSchema } from "@/entities/messages/ui/message-bubble/types";
 import {
   usersStore,
   type User,
 } from "@/entities/user-list/model/useChatSidebar";
+import { socket } from "@/util/model/socket";
+import { useKeyStore } from "@/util/model/zustand";
+import { useUserStore, type userInfo } from "@entities/user/model/userZustand";
+import { port } from "@util/ui/ProtectedRoutes";
+import { useRef } from "react";
+import { useParams } from "react-router";
+import { decryptMessage } from "../../chat/model/decryption";
+import {
+  encryptMessage,
+  getSharedKey,
+  isPeerPublicKeyUnavailableError,
+} from "../../chat/model/encryption";
+import { useMessageStore } from "./messageZustand";
 import useCompanionQuery from "./useCompanionQuery";
 import useMessagesQuery from "./useMessagesQuery";
-import { socket } from "@/util/model/socket";
 
 type sendMessageSchema = {
   typed: string;
@@ -213,8 +213,6 @@ export const useMessages = () => {
       ? [...data.pages].reverse().flatMap((page) => page.messages) ?? []
       : data.pages[data.pages.length - 1]?.messages ?? [];
 
-    if (messagesToDecrypt.length === 0) return;
-
     // Use the cached shared key if available; derive it only when necessary.
     // This avoids a network round-trip on every pagination event.
     let resolvedKey = useKeyStore.getState().sharedKeys.get(chatId);
@@ -352,6 +350,8 @@ export const useMessages = () => {
       user
     );
     setUsers(updatedUsers);
+
+    console.log("sending message with payload", wirePayload);
 
     formData.append("message", JSON.stringify(wirePayload));
     if (type === "call") formData.append("type", type);

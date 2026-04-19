@@ -17,6 +17,8 @@
     "ws": "^8.18.3"
   },
   "scripts": {
+    "start": "node app.js",
+    "start:auth": "node auth.js",
     "dev": "nodemon app.js",
     "devAuth": "nodemon auth.js"
   },

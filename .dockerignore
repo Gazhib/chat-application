@@ -1,0 +1,11 @@
+.git
+.gitignore
+.env
+**/node_modules
+**/dist
+**/.next
+**/*.log
+backend/backend-audit-report.html
+backend/backend-audit-report.pdf
+frontend-audit-report.pdf
+backendpy

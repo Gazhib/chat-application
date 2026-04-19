@@ -1,9 +1,9 @@
 import { useEffect, useRef, useState } from "react";
 import { useCallStore } from "../../../model/callZustand";
-import { socket } from "@/util/model/socket/socket";
 import { useNavigate, useParams } from "react-router";
 import { port } from "@/util/ui/ProtectedRoutes";
 import { useMessageStore } from "@/entities/messages/model/messageZustand";
+import { socket } from "@/util/model/socket";
 
 export const useVideoToolbar = () => {
   const { callId } = useParams();

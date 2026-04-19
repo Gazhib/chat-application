@@ -7,16 +7,13 @@ require("dotenv").config({ path: "../.env" });
 const { initSocket } = require("./socket");
 const routes = require("./routes");
 const { errorHandler } = require("./middleware/error");
+const { createCorsOriginValidator } = require("./utils/origins");
 
 const app = express();
 
 app.use(
   cors({
-    origin: [
-      "http://localhost:5173",
-      "http://localhost:5174",
-      `${process.env.AUTH_PORT}`,
-    ],
+    origin: createCorsOriginValidator(),
     credentials: true,
   })
 );

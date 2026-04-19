@@ -1,13 +1,22 @@
 import { Outlet } from "react-router";
 import { ProfileModal } from "./entities/user/ui/ProfileModal";
 import { useUserStore } from "./entities/user/model/userZustand";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Sidebar } from "./widget/sidebar/ui/Sidebar";
+import { socket } from "./util/model/socket";
 
 export default function CurrentPage() {
   const user = useUserStore((state) => state.user);
 
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
+
+  useEffect(() => {
+    if (!user?._id) return;
+    if (!socket.connected) socket.connect();
+    return () => {
+      socket.disconnect();
+    };
+  }, [user?._id]);
 
   return (
     <>

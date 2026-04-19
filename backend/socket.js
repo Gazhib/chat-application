@@ -2,19 +2,20 @@ const { Server } = require("socket.io");
 const cookie = require("cookie");
 const jwt = require("jsonwebtoken");
 const { callDisconnect } = require("./call");
+const { createCorsOriginValidator } = require("./utils/origins");
 require("dotenv").config({ path: "../.env" });
 
 const accessSecretKey = process.env.ACCESS_SECRET;
-const port = process.env.DF_PORT;
 
 function initSocket(httpServer) {
   const onlineUsers = {};
   const rooms = {};
+  const pendingCalls = {};
 
   const io = new Server(httpServer, {
     path: "/socket.io",
     cors: {
-      origin: ["http://localhost:5173", `http://localhost:${port}`],
+      origin: createCorsOriginValidator(),
       methods: ["GET", "POST"],
       credentials: true,
     },
@@ -23,7 +24,12 @@ function initSocket(httpServer) {
   });
 
   io.engine.on("connection_error", (err) => {
-    console.error("Socket.IO connection error:", err.code, err.message, err.context);
+    console.error(
+      "Socket.IO connection error:",
+      err.code,
+      err.message,
+      err.context
+    );
   });
 
   io.use((socket, next) => {
@@ -55,16 +61,31 @@ function initSocket(httpServer) {
     socket.on("joinRoom", ({ chatId, companionId }) => {
       socket.join(chatId);
       if (companionId in onlineUsers) {
-        const companionSocket = io.sockets.sockets.get(onlineUsers[companionId]);
+        const companionSocket = io.sockets.sockets.get(
+          onlineUsers[companionId]
+        );
         if (companionSocket) companionSocket.join(chatId);
       }
     });
 
     socket.on(
       "chatMessage",
-      ({ chatId, cipher, senderId, _id, createdAt, picture, messageType, companionId, encVersion }) => {
+      ({
+        chatId,
+        cipher,
+        senderId,
+        _id,
+        createdAt,
+        picture,
+        messageType,
+        companionId,
+        encVersion,
+        roomId,
+      }) => {
         if (companionId in onlineUsers) {
-          const companionSocket = io.sockets.sockets.get(onlineUsers[companionId]);
+          const companionSocket = io.sockets.sockets.get(
+            onlineUsers[companionId]
+          );
           if (companionSocket) companionSocket.join(chatId);
         }
 
@@ -78,6 +99,7 @@ function initSocket(httpServer) {
           messageType,
           encVersion: encVersion ?? 1,
           status: { delievered: 0, read: 0 },
+          roomId,
         });
       }
     );
@@ -87,18 +109,42 @@ function initSocket(httpServer) {
     });
 
     socket.on("call", (callId) => {
-      if (rooms[callId]) {
-        if (!rooms[callId].includes(socket.id)) rooms[callId].push(socket.id);
-      } else {
-        rooms[callId] = [socket.id];
-      }
-
-      const otherUser = rooms[callId].find((id) => id !== socket.id);
+      const isNew = !rooms[callId]?.includes(socket.id);
+      if (!isNew) return;
+      rooms[callId] = (rooms[callId] ?? []).concat(socket.id);
       userCallRoom = callId;
-
+      const otherUser = rooms[callId].find((id) => id !== socket.id);
       if (otherUser) {
         socket.emit("otherUser", otherUser);
         socket.to(otherUser).emit("userJoined", socket.id);
+      }
+    });
+
+    socket.on("declineCall", ({ target }) =>
+      io.to(target).emit("callDeclined")
+    );
+
+    socket.on("startCall", ({ calleeId, roomId }) => {
+      pendingCalls[socket.id] = { calleeId, roomId };
+    });
+
+    socket.on("callAccepted", ({ callerId, roomId }) => {
+      const callerSocketId = onlineUsers[callerId];
+      if (callerSocketId) {
+        io.to(callerSocketId).emit("callAccepted", { roomId });
+        delete pendingCalls[callerSocketId];
+      }
+    });
+
+    socket.on("cancelCall", async ({ calleeId }) => {
+      const calleeSocketId = onlineUsers[calleeId];
+      if (calleeSocketId) {
+        io.to(calleeSocketId).emit("callCancelled");
+      }
+      const pending = pendingCalls[socket.id];
+      if (pending) {
+        await callDisconnect(pending.roomId, userId);
+        delete pendingCalls[socket.id];
       }
     });
 
@@ -131,6 +177,14 @@ function initSocket(httpServer) {
         delete rooms[userCallRoom];
         await callDisconnect(userCallRoom, userId);
         io.to(companionId).emit("userLeft");
+      }
+
+      const pending = pendingCalls[socket.id];
+      if (pending) {
+        const calleeSocketId = onlineUsers[pending.calleeId];
+        if (calleeSocketId) io.to(calleeSocketId).emit("callCancelled");
+        await callDisconnect(pending.roomId, userId);
+        delete pendingCalls[socket.id];
       }
 
       io.emit("onlineList", { onlineUsersIds: Object.keys(onlineUsers) });

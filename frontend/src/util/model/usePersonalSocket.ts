@@ -14,17 +14,6 @@ export const usePersonalSocket = ({ id }: hookScheme) => {
   const companionId = useUserStore((state) => state.companionId);
 
   useEffect(() => {
-    if (id !== "") {
-      if (!socket.connected) {
-        socket.connect();
-      }
-      return () => {
-        socket.disconnect();
-      };
-    }
-  }, [id]);
-
-  useEffect(() => {
     const handleStatuses = ({
       onlineUsersIds,
     }: {

@@ -1,3 +1,4 @@
+import { authPort } from "@/util/ui/ProtectedRoutes";
 import { Form, useActionData, useSearchParams } from "react-router";
 
 export default function ForgotPassword() {
@@ -47,9 +48,10 @@ export async function action({ request }: { request: Request }) {
 
   console.log(email, verifyCode);
 
-  const response = await fetch("http://localhost:4000/api/verify-email", {
+  const response = await fetch(`${authPort}/api/verify-email`, {
     method: "POST",
     body: JSON.stringify({ email, verifyCode }),
+    credentials: "include",
     headers: {
       "Content-Type": "application/json",
     },
