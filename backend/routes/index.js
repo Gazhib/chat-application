@@ -1,6 +1,7 @@
 const express = require("express");
 const { tokenMiddleware } = require("../middleware/auth");
 const { upload } = require("../middleware/upload");
+const authRoutes = require("./authRoutes");
 const messageRoutes = require("./messageRoutes");
 const userRoutes = require("./userRoutes");
 const chatRoutes = require("./chatRoutes");
@@ -10,6 +11,7 @@ const userController = require("../controllers/userController");
 
 const router = express.Router();
 
+router.use("/api", authRoutes);
 router.use("/messages", messageRoutes);
 router.use("/users", userRoutes);
 router.use("/chats", chatRoutes);

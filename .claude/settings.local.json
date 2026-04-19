@@ -3,7 +3,12 @@
     "allow": [
       "Bash(awk -F= '!/^\\\\s*#/ && !/^\\\\s*$/ {print $1}' /mnt/c/Users/Bvale/documents/chat-application/.env)",
       "Bash(git log *)",
-      "Bash(git -C /mnt/c/Users/Bvale/documents/chat-application diff master -- backend/socket.js)"
+      "Bash(git -C /mnt/c/Users/Bvale/documents/chat-application diff master -- backend/socket.js)",
+      "Bash(curl -s -o /dev/null -w \"POST /public-key: %{http_code}\\\\n\" -X POST http://localhost:3000/public-key -H \"Content-Type: application/json\" -d '{}')",
+      "Bash(curl -s -o /dev/null -w \"GET /me: %{http_code}\\\\n\" http://localhost:3000/me)",
+      "Bash(curl -s -o /dev/null -w \"GET /nope: %{http_code}\\\\n\" http://localhost:3000/nope)",
+      "Bash(curl -s -i -X OPTIONS http://localhost:3000/public-key -H \"Origin: http://localhost:5173\" -H \"Access-Control-Request-Method: POST\" -H \"Access-Control-Request-Headers: Content-Type\")",
+      "Bash(curl -s -i -X OPTIONS http://localhost:3000/public-key -H \"Origin: http://localhost:8080\" -H \"Access-Control-Request-Method: POST\" -H \"Access-Control-Request-Headers: Content-Type\")"
     ]
   }
 }

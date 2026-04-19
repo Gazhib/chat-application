@@ -10,17 +10,6 @@ services:
       - ./backend:/app/backend
       - /app/backend/node_modules
 
-  auth:
-    build:
-      target: dev
-    command: npm run devAuth
-    environment:
-      NODE_ENV: development
-      CHOKIDAR_USEPOLLING: "true"
-    volumes:
-      - ./backend:/app/backend
-      - /app/backend/node_modules
-
   frontend:
     build:
       target: dev
@@ -28,7 +17,6 @@ services:
     environment:
       CHOKIDAR_USEPOLLING: "true"
       VITE_API_URL: ${VITE_API_URL}
-      VITE_AUTH_URL: ${VITE_AUTH_URL}
     volumes:
       - ./frontend:/app
       - /app/node_modules

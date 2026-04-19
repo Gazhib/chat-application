@@ -26,29 +26,11 @@ services:
         condition: service_healthy
     environment:
       DF_PORT: ${DF_PORT}
-      AUTH_PORT: ${AUTH_PORT}
       FRONTEND_URLS: ${FRONTEND_URLS:-http://localhost:8080,http://127.0.0.1:8080}
     volumes:
       - ./.env:/app/.env:ro
     ports:
       - "${DF_PORT}:${DF_PORT}"
-
-  auth:
-    build:
-      context: .
-      dockerfile: backend/Dockerfile
-    depends_on:
-      postgres:
-        condition: service_healthy
-    command: npm run start:auth
-    environment:
-      DF_PORT: ${DF_PORT}
-      AUTH_PORT: ${AUTH_PORT}
-      FRONTEND_URLS: ${FRONTEND_URLS:-http://localhost:8080,http://127.0.0.1:8080}
-    volumes:
-      - ./.env:/app/.env:ro
-    ports:
-      - "${AUTH_PORT}:${AUTH_PORT}"
 
   frontend:
     build:
@@ -56,10 +38,8 @@ services:
       dockerfile: frontend/Dockerfile
       args:
         VITE_API_URL: ${VITE_API_URL}
-        VITE_AUTH_URL: ${VITE_AUTH_URL}
     depends_on:
       - backend
-      - auth
     ports:
       - "8080:80"
 
