@@ -3,7 +3,7 @@ import { io } from "socket.io-client";
 export const socket = io(apiUrl, {
   path: "/socket.io",
   withCredentials: true,
-  transports: ["websocket"],
+  transports: ["websocket", "polling"],
   autoConnect: true,
 });
 

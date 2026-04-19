@@ -19,7 +19,7 @@ function initSocket(httpServer) {
       methods: ["GET", "POST"],
       credentials: true,
     },
-    transports: ["websocket"],
+    transports: ["websocket", "polling"],
     allowEIO3: true,
   });
 
