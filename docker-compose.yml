@@ -24,13 +24,13 @@ services:
       postgres:
         condition: service_healthy
     environment:
-      DF_PORT: 3000
-      AUTH_PORT: 4000
-      FRONTEND_URLS: http://localhost:8080,http://127.0.0.1:8080
+      DF_PORT: ${DF_PORT}
+      AUTH_PORT: ${AUTH_PORT}
+      FRONTEND_URLS: ${FRONTEND_URLS:-http://localhost:8080,http://127.0.0.1:8080}
     volumes:
       - ./.env:/app/.env:ro
     ports:
-      - "3000:3000"
+      - "${DF_PORT}:${DF_PORT}"
 
   auth:
     build:
@@ -41,21 +41,21 @@ services:
         condition: service_healthy
     command: npm run start:auth
     environment:
-      DF_PORT: 3000
-      AUTH_PORT: 4000
-      FRONTEND_URLS: http://localhost:8080,http://127.0.0.1:8080
+      DF_PORT: ${DF_PORT}
+      AUTH_PORT: ${AUTH_PORT}
+      FRONTEND_URLS: ${FRONTEND_URLS:-http://localhost:8080,http://127.0.0.1:8080}
     volumes:
       - ./.env:/app/.env:ro
     ports:
-      - "4000:4000"
+      - "${AUTH_PORT}:${AUTH_PORT}"
 
   frontend:
     build:
       context: .
       dockerfile: frontend/Dockerfile
       args:
-        VITE_APP_DF_PORT: http://localhost:3000
-        VITE_APP_AUTH_PORT: http://localhost:4000
+        DF_PORT: ${DF_PORT}
+        AUTH_PORT: ${AUTH_PORT}
     depends_on:
       - backend
       - auth

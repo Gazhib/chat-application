@@ -67,7 +67,6 @@ export default function Chat() {
     <section className="flex h-screen min-w-0 flex-1 flex-col bg-[#1E1F22]">
       <ChatHeader
         companionInfo={companion as userInfo}
-        userId={user?._id ?? ""}
       />
       <main
         onScroll={handleScroll}

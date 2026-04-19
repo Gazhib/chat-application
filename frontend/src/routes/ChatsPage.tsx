@@ -15,7 +15,7 @@ export default function ChatsPage() {
   const roomId = useUserStore((state) => state.roomId);
   const setCallee = useUserStore((state) => state.setCallee);
   const setRoomId = useUserStore((state) => state.setRoomId);
-  usePersonalSocket({ id: user?._id ?? "" });
+  usePersonalSocket();
 
   const generateKeyPairs = useKeyStore((state) => state?.getKeyPairs);
 
