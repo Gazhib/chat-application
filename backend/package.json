@@ -18,9 +18,7 @@
   },
   "scripts": {
     "start": "node app.js",
-    "start:auth": "node auth.js",
-    "dev": "nodemon app.js",
-    "devAuth": "nodemon auth.js"
+    "dev": "nodemon app.js"
   },
   "optionalDependencies": {
     "bufferutil": "^4.0.9"

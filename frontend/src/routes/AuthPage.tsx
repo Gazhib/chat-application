@@ -1,6 +1,6 @@
 import { getKeyPair } from "@/entities/chat/model/encryption";
 import Auth from "@/features/authentication/ui/Auth";
-import { authPort } from "@/util/ui/ProtectedRoutes";
+import { authUrl } from "@/util/model/api";
 import { redirect, useNavigate, useSearchParams } from "react-router";
 export default function AuthPage() {
   const [searchParams] = useSearchParams();
@@ -26,7 +26,7 @@ export async function action({ request }: { request: Request }) {
   const fd = await request.formData();
   const url = new URL(request.url);
   const mode = url.searchParams.get("mode");
-  const fetchUrl = `${authPort}/api/${mode}`;
+  const fetchUrl = `${authUrl}/api/${mode}`;
 
   const login = fd.get("Login");
   const email = fd.get("Email");
@@ -63,3 +63,4 @@ export async function action({ request }: { request: Request }) {
     return redirect("/auth?mode=login");
   }
 }
+

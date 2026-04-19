@@ -3,7 +3,7 @@ import { motion } from "framer-motion";
 import type { Area } from "react-easy-crop";
 import { useUserStore, type userInfo } from "../model/userZustand";
 import getCroppedImg from "@/entities/cropper/model/CroppingImage";
-import { port } from "@/util/ui/ProtectedRoutes";
+import { apiUrl } from "@/util/model/api";
 import CustomCropper from "@/entities/cropper/ui/CustomCropper";
 import { pp } from "../model/useUser";
 export default function UserInfo({
@@ -34,7 +34,7 @@ export default function UserInfo({
 
         formData.append("image", newFile);
 
-        const response = await fetch(`${port}/profile-picture`, {
+        const response = await fetch(`${apiUrl}/profile-picture`, {
           method: "PATCH",
           body: formData,
           credentials: "include",
@@ -130,3 +130,4 @@ export default function UserInfo({
     </>
   );
 }
+

@@ -1,4 +1,4 @@
-import { authPort } from "@/util/ui/ProtectedRoutes";
+import { authUrl } from "@/util/model/api";
 import {
   Form,
   redirect,
@@ -55,7 +55,7 @@ export async function action({ request }: { request: Request }) {
   const fd = await request.formData();
   const email = fd.get("email");
   const verifyCode = fd.get("code");
-  const response = await fetch(`${authPort}/api/verify-email`, {
+  const response = await fetch(`${authUrl}/api/verify-email`, {
     method: "POST",
     body: JSON.stringify({ email, verifyCode }),
     credentials: "include",
@@ -69,3 +69,4 @@ export async function action({ request }: { request: Request }) {
   if (!response.ok) return { isFail: true, message: responseData };
   if (response.ok) return redirect("/chats");
 }
+

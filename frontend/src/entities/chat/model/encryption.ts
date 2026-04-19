@@ -1,5 +1,5 @@
 import { Buffer } from "buffer";
-import { port } from "@util/ui/ProtectedRoutes";
+import { apiUrl } from "@util/model/api";
 
 // ─── Public-key upload deduplication ────────────────────────────────────────
 // The public key only needs to be uploaded once per browser session (or when it
@@ -160,7 +160,7 @@ async function persistCurrentKeyPair(
 
 async function fetchCurrentUserCrypto(): Promise<CurrentUserCrypto | null> {
   try {
-    const response = await fetch(`${port}/me`, {
+    const response = await fetch(`${apiUrl}/me`, {
       method: "GET",
       credentials: "include",
     });
@@ -271,7 +271,7 @@ async function uploadPublicKey(cryptoPublicKey: CryptoKey): Promise<void> {
   const exportedPubKey = await crypto.subtle.exportKey("raw", cryptoPublicKey);
   const publicKey = Buffer.from(exportedPubKey).toString("base64");
 
-  const response = await fetch(`${port}/public-key`, {
+  const response = await fetch(`${apiUrl}/public-key`, {
     method: "POST",
     credentials: "include",
     body: JSON.stringify({ publicKey }),
@@ -335,7 +335,7 @@ export async function getSharedKey(
   chatId: string,
   privateKey: CryptoKey
 ): Promise<{ key: CryptoKey; keyVersion: number }> {
-  const response = await fetch(`${port}/peer-public-key`, {
+  const response = await fetch(`${apiUrl}/peer-public-key`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ chatId }),
@@ -394,3 +394,4 @@ export async function encryptMessage(typed: string, sharedKey: CryptoKey) {
 
   return { data: dataBuffer, iv: ivBuffer };
 }
+

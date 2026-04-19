@@ -1,6 +1,7 @@
 services:
   postgres:
     image: postgres:16-alpine
+    command: ["postgres", "-p", "5433"]
     environment:
       POSTGRES_DB: chatenko
       POSTGRES_USER: postgres
@@ -11,7 +12,7 @@ services:
       - postgres_data:/var/lib/postgresql/data
       - ./backend/schema.sql:/docker-entrypoint-initdb.d/01-schema.sql:ro
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres -d chatenko"]
+      test: ["CMD-SHELL", "pg_isready -U postgres -d chatenko -p 5433"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -25,40 +26,20 @@ services:
         condition: service_healthy
     environment:
       DF_PORT: ${DF_PORT}
-      AUTH_PORT: ${AUTH_PORT}
       FRONTEND_URLS: ${FRONTEND_URLS:-http://localhost:8080,http://127.0.0.1:8080}
     volumes:
       - ./.env:/app/.env:ro
     ports:
       - "${DF_PORT}:${DF_PORT}"
 
-  auth:
-    build:
-      context: .
-      dockerfile: backend/Dockerfile
-    depends_on:
-      postgres:
-        condition: service_healthy
-    command: npm run start:auth
-    environment:
-      DF_PORT: ${DF_PORT}
-      AUTH_PORT: ${AUTH_PORT}
-      FRONTEND_URLS: ${FRONTEND_URLS:-http://localhost:8080,http://127.0.0.1:8080}
-    volumes:
-      - ./.env:/app/.env:ro
-    ports:
-      - "${AUTH_PORT}:${AUTH_PORT}"
-
   frontend:
     build:
       context: .
       dockerfile: frontend/Dockerfile
       args:
-        DF_PORT: ${DF_PORT}
-        AUTH_PORT: ${AUTH_PORT}
+        VITE_API_URL: ${VITE_API_URL}
     depends_on:
       - backend
-      - auth
     ports:
       - "8080:80"
 

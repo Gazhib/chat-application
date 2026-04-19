@@ -1,4 +1,4 @@
-import { authPort } from "@/util/ui/ProtectedRoutes";
+import { authUrl } from "@/util/model/api";
 import { useState } from "react";
 import { useNavigate } from "react-router";
 
@@ -8,7 +8,7 @@ export const useSidebar = () => {
   const navigate = useNavigate();
 
   const handleLogout = async () => {
-    await fetch(`${authPort}/api/logout`, {
+    await fetch(`${authUrl}/api/logout`, {
       method: "GET",
       credentials: "include",
     });
@@ -37,3 +37,4 @@ export const useSidebar = () => {
     handleNavigateChats,
   };
 };
+

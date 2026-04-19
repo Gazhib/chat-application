@@ -1,5 +1,5 @@
 import { useUserStore, type userInfo } from "@/entities/user/model/userZustand";
-import { port } from "@/util/ui/ProtectedRoutes";
+import { apiUrl } from "@/util/model/api";
 import { useQuery } from "@tanstack/react-query";
 import { useNavigate, useParams } from "react-router";
 
@@ -14,7 +14,7 @@ export default function useCompanionQuery() {
     queryKey: [chatId, "companion"],
     queryFn: async (): Promise<userInfo> => {
       const companionResponse = await fetch(
-        `${port}/chats/${chatId}/companion`,
+        `${apiUrl}/chats/${chatId}/companion`,
         {
           method: "GET",
           headers: {
@@ -38,7 +38,7 @@ export default function useCompanionQuery() {
 }
 
 export const getCompanion = async (chatId: string) => {
-  const companionResponse = await fetch(`${port}/chats/${chatId}/companion`, {
+  const companionResponse = await fetch(`${apiUrl}/chats/${chatId}/companion`, {
     method: "GET",
     headers: { "Content-Type": "application/json" },
     credentials: "include",
@@ -47,3 +47,4 @@ export const getCompanion = async (chatId: string) => {
   const { companion } = await companionResponse.json();
   return companion as userInfo;
 };
+

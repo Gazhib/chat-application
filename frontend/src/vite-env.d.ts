@@ -1,8 +1,7 @@
 /// <reference types="vite/client" />
 
 interface ImportMetaEnv {
-  readonly DF_PORT?: string;
-  readonly AUTH_PORT?: string;
+  readonly VITE_API_URL: string;
 }
 
 interface ImportMeta {

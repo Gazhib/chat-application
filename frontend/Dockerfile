@@ -15,11 +15,9 @@ FROM node:20-alpine AS build
 
 WORKDIR /app
 
-ARG DF_PORT=3000
-ARG AUTH_PORT=4000
+ARG VITE_API_URL=http://localhost:3000
 
-ENV DF_PORT=$DF_PORT
-ENV AUTH_PORT=$AUTH_PORT
+ENV VITE_API_URL=$VITE_API_URL
 
 COPY frontend/package*.json ./
 RUN npm ci

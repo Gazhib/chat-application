@@ -1,5 +1,3 @@
-export { authPort, port } from "@/util/model/api";
-
 import { useUserStore } from "@/entities/user/model/userZustand";
 import { useUser } from "@/entities/user/model/useUser";
 import { useEffect, useState } from "react";
