@@ -14,6 +14,10 @@ interface userStoreState {
   setUser: (user: userInfo | undefined) => void;
   companionId: string;
   setCompanionId: (companionId: string) => void;
+  callee: userInfo | null;
+  setCallee: (callee: userInfo | null) => void;
+  roomId?: string;
+  setRoomId: (roomId: string | undefined) => void;
 }
 
 export const useUserStore = create<userStoreState>((set) => ({
@@ -24,5 +28,13 @@ export const useUserStore = create<userStoreState>((set) => ({
   companionId: "",
   setCompanionId: (companionId: string) => {
     set({ companionId: companionId });
+  },
+  callee: null,
+  setCallee: (callee: userInfo | null) => {
+    set({ callee });
+  },
+  roomId: undefined,
+  setRoomId: (roomId: string | undefined) => {
+    set({ roomId });
   },
 }));

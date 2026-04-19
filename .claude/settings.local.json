@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(awk -F= '!/^\\\\s*#/ && !/^\\\\s*$/ {print $1}' /mnt/c/Users/Bvale/documents/chat-application/.env)",
+      "Bash(git log *)",
+      "Bash(git -C /mnt/c/Users/Bvale/documents/chat-application diff master -- backend/socket.js)"
+    ]
+  }
+}

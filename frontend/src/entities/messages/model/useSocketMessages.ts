@@ -1,19 +1,21 @@
-import { useCallback, useEffect } from "react";
-import type { MessageSchema } from "../ui/message-bubble/types";
-import { useMessageStore } from "./messageZustand";
-import { usersStore } from "@/entities/user-list/model/useChatSidebar";
-import useCompanionQuery, { getCompanion } from "./useCompanionQuery";
-import { useKeyStore } from "@/util/model/zustand";
-import { useUserStore } from "@/entities/user/model/userZustand";
-import { useParams } from "react-router";
-import { unstable_batchedUpdates } from "react-dom";
 import { decryptMessage } from "@/entities/chat/model/decryption";
 import {
   getSharedKey,
   isPeerPublicKeyUnavailableError,
 } from "@/entities/chat/model/encryption";
-import { handleUpdateUsersList } from "./useMessages";
+import { usersStore } from "@/entities/user-list/model/useChatSidebar";
+import { useUserStore, type userInfo } from "@/entities/user/model/userZustand";
+import { useCallStore } from "@/entities/video-chat/model/callZustand";
+import { useVideoToolbar } from "@/entities/video-chat/ui/Toolbar/model/useVideoToolbar";
 import { socket } from "@/util/model/socket";
+import { useKeyStore } from "@/util/model/zustand";
+import { useCallback, useEffect, useState } from "react";
+import { unstable_batchedUpdates } from "react-dom";
+import { useParams } from "react-router";
+import type { MessageSchema } from "../ui/message-bubble/types";
+import { useMessageStore } from "./messageZustand";
+import useCompanionQuery, { getCompanion } from "./useCompanionQuery";
+import { handleUpdateUsersList } from "./useMessages";
 
 export const useSocketMessages = () => {
   const messages = useMessageStore((state) => state.messages);
@@ -27,16 +29,49 @@ export const useSocketMessages = () => {
 
   // Subscribe to the shared key for the currently open chat only.
   // Other chats' keys remain cached in the Map and are not affected.
-  const currentChatSharedKey = useKeyStore(
-    (state) => (chatId ? state.sharedKeys.get(chatId) : undefined)
+  const currentChatSharedKey = useKeyStore((state) =>
+    chatId ? state.sharedKeys.get(chatId) : undefined
   );
   const keyPairs = useKeyStore((state) => state.keyPairs);
   const setSharedKeyForChat = useKeyStore((state) => state.setSharedKeyForChat);
 
   const user = useUserStore((state) => state.user);
   const addSingleMessage = useMessageStore((state) => state.addSingleMessage);
+  const setCallee = useUserStore((state) => state.setCallee);
 
-  const handleMessage = (msg: MessageSchema) => {
+  const [callingUser, setCallingUser] = useState<userInfo | null>(null);
+  const [callingRoomId, setCallingRoomId] = useState<string | null>(null);
+
+  const isFinished = useCallStore((state) => state.isFinished);
+
+  const { hangUp } = useVideoToolbar();
+
+  const dismissCall = useCallback(() => {
+    setCallingUser(null);
+    setCallingRoomId(null);
+    hangUp();
+    setCallee(null);
+    socket.emit("declineCall", { target: callingUser?._id });
+  }, []);
+
+  useEffect(() => {
+    if (isFinished) {
+      dismissCall();
+    }
+  }, [isFinished, dismissCall]);
+
+  const handleMessage = async (msg: MessageSchema) => {
+    if (
+      msg.messageType === "call" &&
+      msg.roomId &&
+      msg.senderId !== user?._id
+    ) {
+      const curCompanion = await getCompanion(msg.chatId);
+
+      setCallingUser(curCompanion);
+      setCallingRoomId(msg.roomId);
+    }
+
     addSingleMessage(msg);
   };
 
@@ -62,6 +97,15 @@ export const useSocketMessages = () => {
       // Message arrived for a chat the user is not currently viewing:
       // update the sidebar user list but do not attempt decryption.
       if (msg.chatId !== chatId || !chatId) {
+        if (
+          msg.messageType === "call" &&
+          msg.roomId &&
+          msg.senderId !== user?._id
+        ) {
+          const curCompanion = await getCompanion(msg.chatId);
+          setCallingUser(curCompanion);
+          setCallingRoomId(msg.roomId);
+        }
         const updatedUsers = handleUpdateUsersList(
           msg,
           users,
@@ -153,7 +197,15 @@ export const useSocketMessages = () => {
         if (chatId === msg.chatId) handleMessage(decryptedMsg);
       });
     },
-    [chatId, companion, currentChatSharedKey, keyPairs, setSharedKeyForChat, user, users]
+    [
+      chatId,
+      companion,
+      currentChatSharedKey,
+      keyPairs,
+      setSharedKeyForChat,
+      user,
+      users,
+    ]
   );
 
   useEffect(() => {
@@ -165,4 +217,10 @@ export const useSocketMessages = () => {
       socket.off("deleteMessage", handleDeleteMessage);
     };
   }, [handleReceiveMessage, handleDeleteMessage]);
+
+  return {
+    callingUser,
+    callingRoomId,
+    dismissCall,
+  };
 };

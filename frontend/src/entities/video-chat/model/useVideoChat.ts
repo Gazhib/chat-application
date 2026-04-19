@@ -1,9 +1,10 @@
+import { useMessageStore } from "@/entities/messages/model/messageZustand";
+import { useUserStore } from "@/entities/user/model/userZustand";
+import { socket } from "@/util/model/socket";
 import { useEffect, useRef } from "react";
 import { useParams } from "react-router";
-import { useCallStore } from "./callZustand";
 import { useVideoToolbar } from "../ui/Toolbar/model/useVideoToolbar";
-import { useMessageStore } from "@/entities/messages/model/messageZustand";
-import { socket } from "@/util/model/socket";
+import { useCallStore } from "./callZustand";
 type payload = {
   target: string | undefined;
   caller: string | undefined;
@@ -69,7 +70,7 @@ export const useVideoChat = () => {
   };
 
   const handleReceiveCall = (incoming: payload) => {
-    peerRef.current = createPeer();
+    peerRef.current = createPeer(incoming.caller);
     const desc = new RTCSessionDescription(incoming.sdp!);
     peerRef.current
       .setRemoteDescription(desc)
@@ -140,54 +141,64 @@ export const useVideoChat = () => {
     otherUser.current = userId;
   };
 
+  const onUserLeft = async () => {
+    await stopShareScreen();
+    userStream.current?.getTracks().forEach((track) => track.stop());
+    senders.current = [];
+    peerRef.current = null;
+    const updatedMessages = messages.map((msg) =>
+      msg.messageType !== "call"
+        ? msg
+        : msg.finishedAt
+        ? msg
+        : {
+            ...msg,
+            finishedAt: new Date().toLocaleTimeString().slice(0, 5),
+          }
+    );
+    setMessages(updatedMessages);
+    window.close();
+    setIsFinished(true);
+  };
+
+  const setCallee = useUserStore((state) => state.setCallee);
+
   useEffect(() => {
+    socket.on("otherUser", onOtherUser);
+
+    socket.on("userJoined", onUserJoined);
+
+    socket.on("offer", handleReceiveCall);
+
+    socket.on("answer", handleAnswer);
+
+    socket.on("ice-candidate", handleNewICECandidateMsg);
+
+    socket.on("userLeft", onUserLeft);
+
+    socket.on("callDeclined", () => {
+      userStream.current?.getTracks().forEach((t) => t.stop());
+      peerRef.current?.close();
+      setIsFinished(true);
+      setCallee(null);
+    });
+
     navigator.mediaDevices
       .getUserMedia({ audio: true, video: true })
       .then((stream) => {
         if (userVideo.current) userVideo.current.srcObject = stream;
         userStream.current = stream;
         socket.emit("call", callId);
-
-        socket.on("otherUser", onOtherUser);
-
-        socket.on("userJoined", onUserJoined);
-
-        socket.on("offer", handleReceiveCall);
-
-        socket.on("answer", handleAnswer);
-
-        socket.on("ice-candidate", handleNewICECandidateMsg);
-
-        socket.on("userLeft", async () => {
-          await stopShareScreen();
-          userStream.current?.getTracks().forEach((track) => track.stop());
-          senders.current = [];
-          peerRef.current = null;
-          const updatedMessages = messages.map((msg) =>
-            msg.messageType !== "call"
-              ? msg
-              : msg.finishedAt
-              ? msg
-              : {
-                  ...msg,
-                  finishedAt: new Date().toLocaleTimeString().slice(0, 5),
-                }
-          );
-          setMessages(updatedMessages);
-          window.close();
-          setIsFinished(true);
-        });
-
-        return () => {
-          socket.off("otherUser", onOtherUser);
-          socket.off("userJoined", onUserJoined);
-          socket.off("offer", handleReceiveCall);
-          socket.off("answer", handleAnswer);
-          socket.off("ice-candidate", handleNewICECandidateMsg);
-          userStream.current?.getTracks().forEach((track) => track.stop());
-          peerRef.current?.close();
-        };
       });
+    return () => {
+      socket.off("otherUser", onOtherUser);
+      socket.off("userJoined", onUserJoined);
+      socket.off("offer", handleReceiveCall);
+      socket.off("answer", handleAnswer);
+      socket.off("ice-candidate", handleNewICECandidateMsg);
+      userStream.current?.getTracks().forEach((track) => track.stop());
+      peerRef.current?.close();
+    };
   }, []);
 
   return {
@@ -195,5 +206,6 @@ export const useVideoChat = () => {
     companionVideo,
     userStream,
     isFinished,
+    onUserLeft,
   };
 };

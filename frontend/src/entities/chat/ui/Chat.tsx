@@ -28,6 +28,7 @@ export default function Chat() {
 
   const handleSendMessage = (previewUrl: string | undefined) => {
     if (typed === "" && previewUrl === undefined) return;
+
     sendMessage({
       typed,
       chatId: chatId || "",

@@ -42,12 +42,13 @@ export default function ChatHeader({ userId, companionInfo }: Props) {
       </section>
       <section className="flex flex-row gap-[15px]">
         <button
+          type="button"
           onClick={handleCall}
           className="cursor-pointer"
         >
           <i className="bi bi-telephone-fill"></i>
         </button>
-        <button className="cursor-pointer">
+        <button type="button" className="cursor-pointer">
           <i className="bi bi-three-dots-vertical"></i>
         </button>
       </section>

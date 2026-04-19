@@ -47,6 +47,9 @@ export default function MessageBubble({
     setIsPhotoModalOpen(true);
   };
 
+  const isUnfinishedCall =
+    message.messageType === "call" && !message.finishedAt;
+
   useEffect(() => {
     if (!bubbleRef.current) return;
 
@@ -70,6 +73,8 @@ export default function MessageBubble({
       }
     };
   }, []);
+
+  if (isUnfinishedCall) return null;
 
   return (
     <>
@@ -109,12 +114,13 @@ export default function MessageBubble({
                 {companion.login}
               </div>
             )}
-            {message.messageType === "call" ? (
+            {message.messageType === "call" && message.roomId ? (
               <CallMessage
                 handleCall={handleCall}
                 time={time}
-                callId={message.meta}
-                finishedAt={message.finishedAt}
+                createdAt={message.createdAt}
+                finishedAt={message.finishedAt!}
+                isMe={isMe}
               />
             ) : (
               <Meta
